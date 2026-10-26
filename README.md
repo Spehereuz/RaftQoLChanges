@@ -14,6 +14,35 @@ self-contained and can be switched on or off independently.
 | Language | C# 7.3 (limit of RML's runtime compiler) |
 | Multiplayer | Client-side; not required by all players |
 
+## Features
+
+| Feature | Config section | Default | Description |
+|---|---|---|---|
+| Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item (20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
+
+### Disabling a feature
+
+Stacks larger than the vanilla limit are saved as they are and are not clamped by the game on load.
+After disabling Stack size they stay intact: you can take items out of them, but cannot add more until
+they drop below the vanilla limit.
+
+## Configuration
+
+Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on first start:
+
+```json
+{
+    "stackSize": {
+        "enabled": true,
+        "multiplier": 5
+    }
+}
+```
+
+Edit the file while the game is closed or reload the mod in the RML mod manager. `multiplier` is
+clamped to 1–100; resulting stacks never exceed 32767 (save format limit). An invalid file is left
+untouched and defaults are used until it is fixed.
+
 ## Installation
 
 1. Install [RaftModLoader](https://www.raftmodding.com/loader) and start Raft through it once.
@@ -59,7 +88,10 @@ there for IntelliSense, compile-time checks against the real game assemblies and
 ```
 src/                 everything here is packed into the .rmod
   modinfo.json       RML metadata
-  QoLChangesMod.cs   entry point (HMLLibrary.Mod)
+  QoLChangesMod.cs   entry point (HMLLibrary.Mod): loads config, registers features
+  ModConfig.cs       root of config.json, one section per feature
+  Core/              feature base class (own Harmony instance per feature), JSON config, logging
+  Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
   icon.png           512x512
   banner.png         660x200
 tools/Sync-Libs.ps1  restores lib\ from the Raft and RML folders

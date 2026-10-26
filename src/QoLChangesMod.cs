@@ -1,6 +1,7 @@
-using HarmonyLib;
+using System.IO;
 using HMLLibrary;
-using System.Reflection;
+using QoLChanges.Core;
+using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
 {
@@ -8,24 +9,28 @@ namespace QoLChanges
     {
         public const string HarmonyId = "com.vladyslavhardetskyi.qolchanges";
 
-        private Harmony _harmony;
+        private FeatureManager _features;
 
         public void Start()
         {
-            _harmony = new Harmony(HarmonyId);
-            _harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Log("Loaded.");
+            ModConfig config = JsonConfigFile.LoadOrCreate<ModConfig>(Path.Combine(DataFolder, ModConfig.FileName));
+
+            _features = new FeatureManager();
+            _features.Register(new StackSizeFeature(config.stackSize));
+            _features.ApplyConfig();
+
+            ModLog.Info("Loaded.");
         }
 
         public void OnModUnload()
         {
-            if (_harmony != null)
+            if (_features != null)
             {
-                _harmony.UnpatchAll(HarmonyId);
-                _harmony = null;
+                _features.DisableAll();
+                _features = null;
             }
 
-            Log("Unloaded.");
+            ModLog.Info("Unloaded.");
         }
     }
 }
