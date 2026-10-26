@@ -1,15 +1,29 @@
 using System;
 using System.IO;
-using UnityEngine;
+using Newtonsoft.Json;
 
 namespace QoLChanges.Core
 {
+    /// <summary>
+    /// Config persistence. Newtonsoft.Json (shipped with Raft) is used instead of UnityEngine.JsonUtility:
+    /// RML loads mods from in-memory assemblies that Unity's native serializer does not know, so
+    /// JsonUtility silently drops nested config sections.
+    /// </summary>
     internal static class JsonConfigFile
     {
+        private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            MissingMemberHandling = MissingMemberHandling.Ignore,
+            ObjectCreationHandling = ObjectCreationHandling.Auto,
+            NullValueHandling = NullValueHandling.Include,
+        };
+
         /// <summary>
         /// Reads the config from <paramref name="path"/>, creating it with defaults when missing.
-        /// Valid files are rewritten so that options added in newer versions appear in them.
-        /// Invalid files are left untouched and defaults are used for the session.
+        /// Values missing from the file keep their defaults, and valid files are rewritten so that
+        /// options added in newer versions appear in them. Invalid files are left untouched and
+        /// defaults are used for the session.
         /// </summary>
         public static T LoadOrCreate<T>(string path) where T : class, IConfig, new()
         {
@@ -28,7 +42,7 @@ namespace QoLChanges.Core
 
             try
             {
-                JsonUtility.FromJsonOverwrite(File.ReadAllText(path), config);
+                JsonConvert.PopulateObject(File.ReadAllText(path), config, SerializerSettings);
             }
             catch (Exception e)
             {
@@ -48,7 +62,14 @@ namespace QoLChanges.Core
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
-                File.WriteAllText(path, JsonUtility.ToJson(config, true));
+                string temporaryPath = path + ".tmp";
+                File.WriteAllText(temporaryPath, JsonConvert.SerializeObject(config, SerializerSettings));
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+
+                File.Move(temporaryPath, path);
                 return true;
             }
             catch (Exception e)
