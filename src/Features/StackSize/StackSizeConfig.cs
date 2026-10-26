@@ -8,7 +8,7 @@ namespace QoLChanges.Features.StackSize
     public sealed class StackSizeConfig : FeatureConfig
     {
         public const int MinMultiplier = 1;
-        public const int MaxMultiplier = 100;
+        public const int MaxMultiplier = 5;
 
         /// <summary>Vanilla stack size of every stackable item is multiplied by this value (20 -> 100 at 5).</summary>
         public int multiplier = 5;
