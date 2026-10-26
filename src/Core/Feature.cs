@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 
 namespace QoLChanges.Core
@@ -11,7 +12,7 @@ namespace QoLChanges.Core
     {
         private readonly Harmony _harmony;
 
-        protected Feature(string id, FeatureConfig config)
+        protected Feature(string id, string displayName, FeatureConfig config)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -19,11 +20,14 @@ namespace QoLChanges.Core
             }
 
             Id = id;
+            DisplayName = string.IsNullOrEmpty(displayName) ? id : displayName;
             Config = config ?? throw new ArgumentNullException(nameof(config));
             _harmony = new Harmony(QoLChangesMod.HarmonyId + "." + id);
         }
 
         public string Id { get; }
+
+        public string DisplayName { get; }
 
         public FeatureConfig Config { get; }
 
@@ -36,19 +40,14 @@ namespace QoLChanges.Core
                 return true;
             }
 
-            try
+            if (!TryApply())
             {
-                OnEnable();
-                IsEnabled = true;
-                ModLog.Info(Id + ": enabled.");
-                return true;
-            }
-            catch (Exception e)
-            {
-                ModLog.Error(Id + ": failed to enable, changes were rolled back.", e);
-                RevertChanges();
                 return false;
             }
+
+            IsEnabled = true;
+            ModLog.Info(Id + ": enabled.");
+            return true;
         }
 
         public void Disable()
@@ -63,6 +62,30 @@ namespace QoLChanges.Core
             ModLog.Info(Id + ": disabled.");
         }
 
+        /// <summary>Re-applies an enabled feature so that changed settings take effect.</summary>
+        public void Reapply()
+        {
+            if (!IsEnabled)
+            {
+                return;
+            }
+
+            RevertChanges();
+            if (!TryApply())
+            {
+                IsEnabled = false;
+                return;
+            }
+
+            ModLog.Info(Id + ": settings applied.");
+        }
+
+        /// <summary>Options shown in the settings menu, besides the enabled toggle.</summary>
+        public virtual IEnumerable<FeatureSetting> GetSettings()
+        {
+            yield break;
+        }
+
         protected void Patch(Type patchClass)
         {
             _harmony.CreateClassProcessor(patchClass).Patch();
@@ -73,6 +96,21 @@ namespace QoLChanges.Core
 
         /// <summary>Reverts everything <see cref="OnEnable"/> changed. Must tolerate a partial enable.</summary>
         protected abstract void OnDisable();
+
+        private bool TryApply()
+        {
+            try
+            {
+                OnEnable();
+                return true;
+            }
+            catch (Exception e)
+            {
+                ModLog.Error(Id + ": failed to enable, changes were rolled back.", e);
+                RevertChanges();
+                return false;
+            }
+        }
 
         private void RevertChanges()
         {

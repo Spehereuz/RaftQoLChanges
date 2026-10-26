@@ -10,6 +10,9 @@ namespace QoLChanges
     {
         public const string FileName = "config.json";
 
+        /// <summary>Master switch: when false every feature is off, their own settings are kept.</summary>
+        public bool enabled = true;
+
         public StackSizeConfig stackSize = new StackSizeConfig();
 
         public void Normalize()

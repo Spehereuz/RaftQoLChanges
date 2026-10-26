@@ -23,9 +23,20 @@ namespace QoLChanges.Features.StackSize
         private readonly Dictionary<Item_Base, int> _originalStackSizes = new Dictionary<Item_Base, int>();
 
         public StackSizeFeature(StackSizeConfig config)
-            : base(FeatureId, config)
+            : base(FeatureId, "Stack size", config)
         {
             _config = config;
+        }
+
+        public override IEnumerable<FeatureSetting> GetSettings()
+        {
+            yield return new IntSliderSetting(
+                "Stack multiplier",
+                StackSizeConfig.MinMultiplier,
+                StackSizeConfig.MaxMultiplier,
+                () => _config.multiplier,
+                value => _config.multiplier = value,
+                value => value + "x");
         }
 
         protected override void OnEnable()

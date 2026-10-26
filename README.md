@@ -18,7 +18,14 @@ self-contained and can be switched on or off independently.
 
 | Feature | Config section | Default | Description |
 |---|---|---|---|
-| Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item (20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
+| Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item by 1–5 (at 5: 20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
+
+### In-game menu
+
+Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
+switched off as a whole from there, and **Settings** opens its page where each feature has its own
+toggle and options. Changes apply immediately and are saved to the config file. Esc or the close
+button goes one level back.
 
 ### Disabling a feature
 
@@ -32,6 +39,7 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
 
 ```json
 {
+    "enabled": true,
     "stackSize": {
         "enabled": true,
         "multiplier": 5
@@ -39,9 +47,10 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
 }
 ```
 
-Edit the file while the game is closed or reload the mod in the RML mod manager. `multiplier` is
-clamped to 1–100; resulting stacks never exceed 32767 (save format limit). An invalid file is left
-untouched and defaults are used until it is fixed.
+The top-level `enabled` switches the whole mod off while keeping each feature's own settings.
+The in-game menu is the intended way to change settings; when editing the file by hand, do it while
+the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5. An
+invalid file is left untouched and defaults are used until it is fixed.
 
 ## Installation
 
@@ -88,10 +97,14 @@ there for IntelliSense, compile-time checks against the real game assemblies and
 ```
 src/                 everything here is packed into the .rmod
   modinfo.json       RML metadata
-  QoLChangesMod.cs   entry point (HMLLibrary.Mod): loads config, registers features
+  QoLChangesMod.cs   entry point (HMLLibrary.Mod)
+  QoLRuntime.cs      owns config and features; every change from the menu goes through it
   ModConfig.cs       root of config.json, one section per feature
-  Core/              feature base class (own Harmony instance per feature), JSON config, logging
+  Core/              feature base class (own Harmony instance per feature), declarative feature
+                     settings, JSON config, logging
   Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
+  UI/                pause menu "Mods" button and window; widgets are cloned from Raft's own
+                     pause and settings menus at runtime, so no game assets are shipped
   icon.png           512x512
   banner.png         660x200
 tools/Sync-Libs.ps1  restores lib\ from the Raft and RML folders

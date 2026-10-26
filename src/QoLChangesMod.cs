@@ -1,7 +1,6 @@
-using System.IO;
 using HMLLibrary;
 using QoLChanges.Core;
-using QoLChanges.Features.StackSize;
+using QoLChanges.UI;
 
 namespace QoLChanges
 {
@@ -9,25 +8,33 @@ namespace QoLChanges
     {
         public const string HarmonyId = "com.vladyslavhardetskyi.qolchanges";
 
-        private FeatureManager _features;
+        private QoLRuntime _runtime;
+        private ModMenu _menu;
 
         public void Start()
         {
-            ModConfig config = JsonConfigFile.LoadOrCreate<ModConfig>(Path.Combine(DataFolder, ModConfig.FileName));
+            _runtime = new QoLRuntime(DataFolder);
+            _runtime.Start();
 
-            _features = new FeatureManager();
-            _features.Register(new StackSizeFeature(config.stackSize));
-            _features.ApplyConfig();
+            _menu = gameObject.AddComponent<ModMenu>();
+            _menu.Initialize(this, _runtime);
 
             ModLog.Info("Loaded.");
         }
 
         public void OnModUnload()
         {
-            if (_features != null)
+            if (_menu != null)
             {
-                _features.DisableAll();
-                _features = null;
+                _menu.Shutdown();
+                Destroy(_menu);
+                _menu = null;
+            }
+
+            if (_runtime != null)
+            {
+                _runtime.Shutdown();
+                _runtime = null;
             }
 
             ModLog.Info("Unloaded.");

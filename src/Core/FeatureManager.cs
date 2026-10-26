@@ -24,12 +24,15 @@ namespace QoLChanges.Core
             _features.Add(feature);
         }
 
-        /// <summary>Enables or disables every feature according to its config.</summary>
-        public void ApplyConfig()
+        /// <summary>
+        /// Brings every feature in line with its config. When <paramref name="modEnabled"/> is false,
+        /// all features are disabled regardless of their own setting.
+        /// </summary>
+        public void ApplyConfig(bool modEnabled)
         {
             foreach (Feature feature in _features)
             {
-                if (feature.Config.enabled)
+                if (modEnabled && feature.Config.enabled)
                 {
                     feature.Enable();
                 }
