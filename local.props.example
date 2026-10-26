@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Copy this file to local.props (ignored by git) and adjust the paths for your machine.
+  -->
+  <PropertyGroup>
+    <!-- Raft install folder: the one that contains Raft.exe -->
+    <RaftDir>C:\Program Files (x86)\Steam\steamapps\common\Raft</RaftDir>
+    <!-- RaftModLoader data folder: the one that contains binaries\coremod.dll -->
+    <RmlDir>$(APPDATA)\RaftModLoader</RmlDir>
+    <!-- Copy the built .rmod into <RaftDir>\mods after every build -->
+    <DeployToGame>true</DeployToGame>
+  </PropertyGroup>
+</Project>
