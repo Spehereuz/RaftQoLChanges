@@ -1,0 +1,24 @@
+# Game and RML assemblies (copyrighted, restored locally via tools/Sync-Libs.ps1)
+/lib
+
+# Machine-specific paths
+/local.props
+
+# Build output
+[Bb]in/
+[Oo]bj/
+*.rmod
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
