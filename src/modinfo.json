@@ -1,0 +1,13 @@
+{
+  "name": "QoL Changes",
+  "author": "Vladyslav Hardetskyi",
+  "description": "Modular quality-of-life improvements that remove routine without touching survival balance.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "icon": "icon.png",
+  "banner": "banner.png",
+  "gameVersion": "1.1.01",
+  "requiredByAllPlayers": false,
+  "isModPermanent": false,
+  "excludedFiles": []
+}
