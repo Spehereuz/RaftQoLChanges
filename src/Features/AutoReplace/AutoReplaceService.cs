@@ -11,6 +11,7 @@ namespace QoLChanges.Features.AutoReplace
     {
         Tools,
         Food,
+        Consumables,
     }
 
     /// <summary>

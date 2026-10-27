@@ -16,5 +16,10 @@ namespace QoLChanges.Features.AutoReplace
 
         /// <summary>Food and drinks of which the last portion was eaten from the selected hotbar slot.</summary>
         public bool food = true;
+
+        /// <summary>
+        /// Other items used up from the hand: seeds, batteries, fuel, placeables, salves, bait, fireworks and the like.
+        /// </summary>
+        public bool consumables = true;
     }
 }
