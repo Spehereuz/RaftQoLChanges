@@ -44,6 +44,7 @@ namespace QoLChanges.UI
             toggle.interactable = interactable;
             toggle.onValueChanged.AddListener(value => onChanged(value));
             ApplyInteractableTint(text, interactable);
+            DimWhenDisabled(toggle.gameObject, interactable);
             return toggle;
         }
 
@@ -208,8 +209,9 @@ namespace QoLChanges.UI
         }
 
         /// <summary>
-        /// Selectable's colour tint only affects its target graphic (the handle), so the track and fill
-        /// stay bright on a disabled slider. A canvas group dims the whole control like the labels.
+        /// Selectable's colour tint only affects its target graphic (the handle, the checkbox background),
+        /// so the track, fill and checkmark stay bright on a disabled control. A canvas group dims the whole
+        /// control like the labels.
         /// </summary>
         private static void DimWhenDisabled(GameObject control, bool interactable)
         {
