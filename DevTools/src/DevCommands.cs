@@ -233,6 +233,22 @@ namespace QoLDevTools
             });
         }
 
+        [ConsoleCommand(
+            name: "qoldev.scarecrow",
+            docs: "Host only: removes parts (default 1) of the basic scarecrow under the crosshair, like a pecking seagull. Syntax: " + ScarecrowDamage.Syntax)]
+        public static string DamageScarecrow(string[] args)
+        {
+            return Run(() =>
+            {
+                if (!TryGetLocalPlayer(out Network_Player _, out string error))
+                {
+                    return error;
+                }
+
+                return ScarecrowDamage.Damage(args);
+            });
+        }
+
         /// <summary>The last argument is the amount when it is a number; everything before it is the name.</summary>
         private static bool TryParseGiveArgs(string[] args, out string name, out int amount, out string error)
         {
