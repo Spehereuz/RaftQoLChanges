@@ -5,6 +5,15 @@ using UnityEngine.UI;
 
 namespace QoLChanges.UI
 {
+    internal enum RowStyle
+    {
+        /// <summary>Dark background, label at the left edge: a feature or a mod.</summary>
+        Header,
+
+        /// <summary>No background, indented label: an option under a header.</summary>
+        Option,
+    }
+
     /// <summary>Settings-style rows built from the native "Quick build", "Master volume" and "Language" rows.</summary>
     internal static class RaftUiRows
     {
@@ -12,7 +21,7 @@ namespace QoLChanges.UI
 
         public static Text CreateLabelRow(RaftUiTemplates templates, Transform parent, string label)
         {
-            GameObject row = CreateRowBase(templates.ToggleRow, parent, "Row_" + label, out Text text);
+            GameObject row = CreateRowBase(templates.ToggleRow, parent, "Row_" + label, RowStyle.Header, out Text text);
             Toggle toggle = row.GetComponentInChildren<Toggle>(true);
             if (toggle != null)
             {
@@ -30,14 +39,10 @@ namespace QoLChanges.UI
             bool isOn,
             bool interactable,
             Action<bool> onChanged,
-            bool indented = false)
+            RowStyle style = RowStyle.Header)
         {
-            GameObject row = CreateRowBase(templates.ToggleRow, parent, "Row_" + label, out Text text);
+            GameObject row = CreateRowBase(templates.ToggleRow, parent, "Row_" + label, style, out Text text);
             RaftUi.SetText(text, label);
-            if (indented)
-            {
-                Indent(text);
-            }
 
             Toggle toggle = row.GetComponentInChildren<Toggle>(true);
             toggle.SetIsOnWithoutNotify(isOn);
@@ -57,15 +62,11 @@ namespace QoLChanges.UI
             int value,
             Func<int, string> format,
             bool interactable,
-            bool indented,
+            RowStyle style,
             Action<int> onChanged)
         {
-            GameObject row = CreateRowBase(templates.SliderRow, parent, "Row_" + label, out Text text);
+            GameObject row = CreateRowBase(templates.SliderRow, parent, "Row_" + label, style, out Text text);
             RaftUi.SetText(text, label);
-            if (indented)
-            {
-                Indent(text);
-            }
 
             Slider slider = row.GetComponentInChildren<Slider>(true);
             Text valueText = RaftUi.FindText(row, "Slider value text");
@@ -103,15 +104,11 @@ namespace QoLChanges.UI
             IEnumerable<string> options,
             int value,
             bool interactable,
-            bool indented,
+            RowStyle style,
             Action<int> onChanged)
         {
-            GameObject row = CreateRowBase(templates.DropdownRow, parent, "Row_" + label, out Text text);
+            GameObject row = CreateRowBase(templates.DropdownRow, parent, "Row_" + label, style, out Text text);
             RaftUi.SetText(text, label);
-            if (indented)
-            {
-                Indent(text);
-            }
 
             Dropdown dropdown = row.GetComponentInChildren<Dropdown>(true);
             dropdown.ClearOptions();
@@ -192,13 +189,32 @@ namespace QoLChanges.UI
             return status;
         }
 
-        private static GameObject CreateRowBase(GameObject template, Transform parent, string name, out Text label)
+        private static GameObject CreateRowBase(GameObject template, Transform parent, string name, RowStyle style, out Text label)
         {
             GameObject row = RaftUi.Clone(template, name);
             RaftUi.HideChild(row.transform, "Selected");
             label = RaftUi.FindText(row, "Text");
+            ApplyStyle(row, label, style);
             RaftUi.Place(row, parent);
             return row;
+        }
+
+        /// <summary>
+        /// Raft's settings rows carry their own background image, enabled on some rows and disabled on
+        /// others (the "MasterVolume" slider row has none), so it is set explicitly for every row.
+        /// </summary>
+        private static void ApplyStyle(GameObject row, Text label, RowStyle style)
+        {
+            Image background = row.GetComponent<Image>();
+            if (background != null)
+            {
+                background.enabled = style == RowStyle.Header;
+            }
+
+            if (style == RowStyle.Option && label != null)
+            {
+                Indent(label);
+            }
         }
 
         private static void Indent(Text text)

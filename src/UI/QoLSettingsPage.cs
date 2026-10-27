@@ -55,7 +55,7 @@ namespace QoLChanges.UI
                     slider.Value,
                     slider.Format,
                     interactable,
-                    true,
+                    RowStyle.Option,
                     value =>
                     {
                         slider.Value = value;
@@ -78,7 +78,7 @@ namespace QoLChanges.UI
                         toggle.Value = value;
                         runtime.ApplyFeatureSettings(feature);
                     },
-                    true);
+                    RowStyle.Option);
                 return;
             }
 
@@ -92,7 +92,7 @@ namespace QoLChanges.UI
                     choice.Options,
                     choice.Value,
                     interactable,
-                    true,
+                    RowStyle.Option,
                     value =>
                     {
                         choice.Value = value;
