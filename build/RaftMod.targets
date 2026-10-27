@@ -1,0 +1,115 @@
+<Project>
+  <!--
+    Shared build of a RaftModLoader mod. Import it from a mod project after setting AssemblyName,
+    RootNamespace and Version. The project folder must contain src\ (packed into the .rmod).
+    Game and RML assemblies come from lib\ and machine paths from local.props, both in the repository root.
+  -->
+
+  <Import Project="$(MSBuildThisFileDirectory)..\local.props" Condition="Exists('$(MSBuildThisFileDirectory)..\local.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- Paths -->
+  <PropertyGroup>
+    <ModSourceDir>$(MSBuildProjectDirectory)\src\</ModSourceDir>
+    <LibDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'lib'))</LibDir>
+    <GameManagedDir>$(LibDir)Managed\</GameManagedDir>
+    <RmlLibDir>$(LibDir)RML\</RmlLibDir>
+    <PublicizedLibDir>$(LibDir)Publicized\</PublicizedLibDir>
+  </PropertyGroup>
+
+  <!-- .rmod packaging and deployment -->
+  <PropertyGroup>
+    <RmodName Condition="'$(RmodName)' == ''">$(AssemblyName)</RmodName>
+    <DeployToGame Condition="'$(DeployToGame)' == ''">true</DeployToGame>
+    <RaftModsDir>$(RaftDir)\mods\</RaftModsDir>
+  </PropertyGroup>
+
+  <!--
+    Compile against the exact runtime Raft ships (Unity 2021.3 Mono) instead of a .NET Framework
+    targeting pack: mscorlib/System/System.Core and the netstandard facade come from lib\Managed.
+  -->
+  <PropertyGroup>
+    <FrameworkPathOverride>$(GameManagedDir.TrimEnd('\'))</FrameworkPathOverride>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ModSourceDir)**\*.cs" />
+    <None Include="$(ModSourceDir)**\*" Exclude="$(ModSourceDir)**\*.cs" />
+  </ItemGroup>
+
+  <!-- Runtime (Unity Mono) -->
+  <ItemGroup>
+    <Reference Include="mscorlib" HintPath="$(GameManagedDir)mscorlib.dll" Private="false" />
+    <Reference Include="netstandard" HintPath="$(GameManagedDir)netstandard.dll" Private="false" />
+    <Reference Include="System" HintPath="$(GameManagedDir)System.dll" Private="false" />
+    <Reference Include="System.Core" HintPath="$(GameManagedDir)System.Core.dll" Private="false" />
+    <Reference Include="System.Xml" HintPath="$(GameManagedDir)System.Xml.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- Raft -->
+  <ItemGroup>
+    <!-- RML compiles mods against a publicized Assembly-CSharp, so private members are accessible at runtime as well. -->
+    <Reference Include="Assembly-CSharp" HintPath="$(PublicizedLibDir)Assembly-CSharp.dll" Private="false" />
+    <Reference Include="com.rlabrecque.steamworks.net" HintPath="$(GameManagedDir)com.rlabrecque.steamworks.net.dll" Private="false" />
+    <Reference Include="Unity.TextMeshPro" HintPath="$(GameManagedDir)Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="Unity.InputSystem" HintPath="$(GameManagedDir)Unity.InputSystem.dll" Private="false" />
+    <Reference Include="Unity.Netcode.Runtime" HintPath="$(GameManagedDir)Unity.Netcode.Runtime.dll" Private="false" />
+    <Reference Include="Unity.Collections" HintPath="$(GameManagedDir)Unity.Collections.dll" Private="false" />
+    <Reference Include="UnityEngine.UI" HintPath="$(GameManagedDir)UnityEngine.UI.dll" Private="false" />
+    <Reference Include="PlayFab" HintPath="$(GameManagedDir)PlayFab.dll" Private="false" />
+    <Reference Include="FMODUnity" HintPath="$(GameManagedDir)FMODUnity.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(GameManagedDir)UnityEngine.dll;$(GameManagedDir)UnityEngine.*Module.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- RaftModLoader -->
+  <ItemGroup>
+    <Reference Include="AssemblyLoader" HintPath="$(RmlLibDir)HMLCoreLibrary.dll" Private="false" />
+    <Reference Include="coremod" HintPath="$(RmlLibDir)coremod.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(RmlLibDir)0Harmony.dll" Private="false" />
+  </ItemGroup>
+
+  <Target Name="VerifyLibs" BeforeTargets="ResolveAssemblyReferences;CoreCompile">
+    <Error Condition="!Exists('$(PublicizedLibDir)Assembly-CSharp.dll') Or !Exists('$(RmlLibDir)coremod.dll') Or !Exists('$(GameManagedDir)UnityEngine.CoreModule.dll')"
+           Text="Game/RML assemblies are missing in '$(LibDir)'. Launch Raft once through RMLLauncher, then run: powershell -ExecutionPolicy Bypass -File tools\Sync-Libs.ps1" />
+  </Target>
+
+  <Target Name="PackageRmod" AfterTargets="Build">
+    <PropertyGroup>
+      <RmodStagingDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'rmod'))</RmodStagingDir>
+      <RmodFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(OutDir)', '$(RmodName).rmod'))</RmodFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <RmodContent Include="$(ModSourceDir)**\*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(RmodStagingDir)" />
+    <Copy SourceFiles="@(RmodContent)" DestinationFiles="@(RmodContent->'$(RmodStagingDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <ZipDirectory SourceDirectory="$(RmodStagingDir)" DestinationFile="$(RmodFile)" Overwrite="true" />
+    <Message Importance="high" Text="$(MSBuildProjectName) -> $(RmodFile)" />
+  </Target>
+
+  <Target Name="DeployRmod" AfterTargets="PackageRmod"
+          Condition="'$(DeployToGame)' == 'true' And '$(RaftDir)' != '' And Exists('$(RaftDir)\Raft.exe')">
+    <Copy SourceFiles="$(RmodFile)" DestinationFolder="$(RaftModsDir)" Retries="3" RetryDelayMilliseconds="500" />
+    <Message Importance="high" Text="$(MSBuildProjectName) -> $(RaftModsDir)$(RmodName).rmod" />
+  </Target>
+
+</Project>
