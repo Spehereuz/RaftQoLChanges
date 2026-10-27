@@ -18,6 +18,12 @@ namespace QoLChanges.Features.HoverInfo
         /// <summary>Purification progress and fresh water of water purifiers.</summary>
         public bool purifiers = true;
 
+        /// <summary>Grills, cooking pots and juicers.</summary>
+        public bool cooking = true;
+
+        /// <summary>Smelters and the paint mill.</summary>
+        public bool smelters = true;
+
         public override void Normalize()
         {
             if (!Enum.IsDefined(typeof(BatteryDisplayMode), battery))
