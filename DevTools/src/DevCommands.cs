@@ -212,6 +212,27 @@ namespace QoLDevTools
             });
         }
 
+        [ConsoleCommand(
+            name: "qoldev.net",
+            docs: "Host only: fills the collection net under the crosshair with debris, to a number of items or 'full', or empties it with 'clear'. Syntax: " + CollectionNet.Syntax)]
+        public static string Net(string[] args)
+        {
+            return Run(() =>
+            {
+                if (args == null || args.Length != 1)
+                {
+                    return "Syntax: " + CollectionNet.Syntax;
+                }
+
+                if (!TryGetLocalPlayer(out Network_Player _, out string error))
+                {
+                    return error;
+                }
+
+                return CollectionNet.Set(args[0]);
+            });
+        }
+
         /// <summary>The last argument is the amount when it is a number; everything before it is the name.</summary>
         private static bool TryParseGiveArgs(string[] args, out string name, out int amount, out string error)
         {
