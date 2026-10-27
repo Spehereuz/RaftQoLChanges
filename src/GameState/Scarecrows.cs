@@ -84,6 +84,13 @@ namespace QoLChanges.GameState
             return zone;
         }
 
+        /// <summary>The point the seagulls search for scarecrows around: the centre of the crop plot's main collider.</summary>
+        public static Vector3 CropplotCentre(Cropplot cropplot)
+        {
+            BoxCollider collider = cropplot.mainCollider;
+            return collider != null ? collider.transform.TransformPoint(collider.center) : cropplot.transform.position;
+        }
+
         public static void Clear()
         {
             PlacedScarecrows.Clear();
@@ -174,6 +181,13 @@ namespace QoLChanges.GameState
             }
 
             return new ScarecrowZone(box);
+        }
+
+        /// <summary>Whether a crop plot centred at <paramref name="point"/> is protected by this scarecrow.</summary>
+        public bool Contains(Transform scarecrow, Vector3 point, float radius)
+        {
+            Vector3 closest = scarecrow.TransformPoint(Box.ClosestPoint(scarecrow.InverseTransformPoint(point)));
+            return (closest - point).sqrMagnitude <= radius * radius;
         }
 
         /// <summary>

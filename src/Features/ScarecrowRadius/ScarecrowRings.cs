@@ -10,7 +10,8 @@ namespace QoLChanges.Features.ScarecrowRadius
     /// <summary>
     /// Shows the zones of all placed scarecrows while the local player holds the hammer or a scarecrow and no menu is
     /// open. Basic scarecrows, which break, are yellow; advanced ones green. The preview of a scarecrow being placed is
-    /// shown half transparent in the green or red of the game's preview.
+    /// shown half transparent in the green or red of the game's preview. Meanwhile crop plots can be lit by whether a
+    /// scarecrow protects them, counting the preview when it can be placed.
     /// </summary>
     internal sealed class ScarecrowRings : MonoBehaviour
     {
@@ -19,6 +20,9 @@ namespace QoLChanges.Features.ScarecrowRadius
 
         // The zone of a scarecrow reaches crop plots up to two floors above and below it.
         private const int NeighbourFloors = 2;
+
+        // Crop plots change only when scarecrows or crop plots are placed, moved by the preview or destroyed.
+        private const float TintInterval = 0.25f;
 
         // Transparent, coloured by vertex, hidden behind blocks; always included in Unity builds.
         private const string LineShader = "Sprites/Default";
@@ -36,6 +40,9 @@ namespace QoLChanges.Features.ScarecrowRadius
         private readonly Dictionary<Scarecrow, ScarecrowRing> _rings = new Dictionary<Scarecrow, ScarecrowRing>();
         private readonly List<Scarecrow> _removed = new List<Scarecrow>();
         private readonly Dictionary<Item_Base, bool> _scarecrowItems = new Dictionary<Item_Base, bool>();
+        private readonly List<Scarecrow> _protectors = new List<Scarecrow>();
+        private readonly CropplotTint _cropplotTint = new CropplotTint();
+        private float _nextTint;
         private ScarecrowRadiusConfig _config;
         private Material _material;
         private ScarecrowRing _ghostRing;
@@ -78,6 +85,7 @@ namespace QoLChanges.Features.ScarecrowRadius
 
         private void OnDestroy()
         {
+            _cropplotTint.Clear();
             _rings.Clear();
             _ghostRing = null;
             Scarecrows.Clear();
@@ -97,8 +105,14 @@ namespace QoLChanges.Features.ScarecrowRadius
                 HeldTool tool = GetHeldTool(player);
                 if (tool != HeldTool.None)
                 {
+                    Scarecrow ghost = tool == HeldTool.Scarecrow ? ScarecrowGhost.Find(player) : null;
                     ShowRings();
-                    ShowGhostRing(tool == HeldTool.Scarecrow ? ScarecrowGhost.Find(player) : null);
+                    ShowGhostRing(ghost);
+                    if (_config.cropPlots && Time.unscaledTime >= _nextTint)
+                    {
+                        _nextTint = Time.unscaledTime + TintInterval;
+                        TintCropplots(ghost);
+                    }
                 }
                 else
                 {
@@ -179,8 +193,29 @@ namespace QoLChanges.Features.ScarecrowRadius
             _ghostRing.Show(ghost.transform, Scarecrows.GetZone(ghost), Scarecrows.Radius, colour);
         }
 
+        private void TintCropplots(Scarecrow ghost)
+        {
+            _protectors.Clear();
+            foreach (Scarecrow scarecrow in Scarecrows.Placed())
+            {
+                if (scarecrow != null && !scarecrow.Destroyed)
+                {
+                    _protectors.Add(scarecrow);
+                }
+            }
+
+            if (ghost != null && ScarecrowGhost.CanBePlaced(ghost))
+            {
+                _protectors.Add(ghost);
+            }
+
+            _cropplotTint.Refresh(_protectors, Scarecrows.Radius);
+        }
+
         private void HideRings()
         {
+            _cropplotTint.Clear();
+            _nextTint = 0f;
             foreach (ScarecrowRing ring in _rings.Values)
             {
                 ring.Hide();

@@ -19,6 +19,9 @@ namespace QoLChanges.Features.ScarecrowRadius
         /// <summary>Also outline the zone two floors above and below the scarecrow.</summary>
         public bool neighbouringFloors;
 
+        /// <summary>Light crop plots green inside a zone and red outside of it.</summary>
+        public bool cropPlots = true;
+
         /// <summary>Width of the lines in centimetres, 2 to 10.</summary>
         public int lineWidth = 4;
 
