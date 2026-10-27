@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
-namespace QoLChanges.Features.RaftStatus
+namespace QoLChanges.GameState
 {
     /// <summary>What the running engines do with the raft.</summary>
     internal enum EngineDrive
@@ -33,6 +33,19 @@ namespace QoLChanges.Features.RaftStatus
 
         /// <summary>The engines do not move the raft.</summary>
         TooHeavy,
+    }
+
+    /// <summary>Whether the fuel of an engine is being burnt.</summary>
+    internal enum FuelUse
+    {
+        /// <summary>The engine is switched off.</summary>
+        Off,
+
+        /// <summary>The engine runs and burns fuel.</summary>
+        Burning,
+
+        /// <summary>The engine runs, but an anchor holds the raft or it is too heavy: no fuel is burnt.</summary>
+        Paused,
     }
 
     /// <summary>Fuel in the tank of one engine.</summary>
@@ -198,6 +211,12 @@ namespace QoLChanges.Features.RaftStatus
         private static EngineFuel Emptier(EngineFuel? current, EngineFuel candidate)
         {
             return current.HasValue && current.Value.Fraction <= candidate.Fraction ? current.Value : candidate;
+        }
+
+        /// <summary>Whether the engines that are switched on burn fuel while they do <paramref name="drive"/>.</summary>
+        public static FuelUse GetFuelUse(EngineDrive drive)
+        {
+            return drive == EngineDrive.HeldByAnchor || drive == EngineDrive.TooHeavy ? FuelUse.Paused : FuelUse.Burning;
         }
 
         /// <summary>Same as MotorWheel.PushDirection of a running engine.</summary>

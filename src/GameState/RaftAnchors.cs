@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
-namespace QoLChanges.Features.RaftStatus
+namespace QoLChanges.GameState
 {
     /// <summary>State of all anchors on the raft at one moment.</summary>
     internal struct AnchorSummary

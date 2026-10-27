@@ -1,16 +1,11 @@
-using QoLChanges.Core;
+using QoLChanges.GameState;
 using QoLChanges.UI;
-using UnityEngine;
 
 namespace QoLChanges.Features.RaftStatus
 {
     /// <summary>Texts of the HUD lines. Labels are white, states and warnings are coloured.</summary>
     internal static class RaftStatusText
     {
-        // Tools have a red-yellow-green durability bar; fuel is coloured the same way.
-        private const string GradientItem = "Axe";
-
-        private static Gradient _fuelGradient;
         public static string Anchor(AnchorSummary anchors)
         {
             string state;
@@ -71,65 +66,12 @@ namespace QoLChanges.Features.RaftStatus
         /// </summary>
         public static string Fuel(EngineSummary engines, EngineDrive drive)
         {
-            EngineFuel? switchedOn = engines.LowestSwitchedOn;
-            EngineFuel? shown = switchedOn ?? engines.Lowest;
-            if (!shown.HasValue)
+            if (engines.LowestSwitchedOn.HasValue)
             {
-                return null;
+                return FuelText.Format(engines.LowestSwitchedOn.Value, RaftEngines.GetFuelUse(drive));
             }
 
-            EngineFuel fuel = shown.Value;
-            if (fuel.Amount <= 0f)
-            {
-                return StatusText.Colored("Empty", StatusText.Problem);
-            }
-
-            string percent = StatusText.Colored(Percent.OfRemaining(fuel.Amount, fuel.Capacity) + "%", FuelColor(fuel.Fraction));
-            if (!switchedOn.HasValue)
-            {
-                return percent;
-            }
-
-            switch (drive)
-            {
-                case EngineDrive.Pushing:
-                case EngineDrive.NoThrust:
-                    return StatusText.Join(percent, Duration(fuel.Amount * fuel.SecondsPerUnit));
-                case EngineDrive.HeldByAnchor:
-                case EngineDrive.TooHeavy:
-                    return StatusText.Join(percent, "paused");
-                default:
-                    return percent;
-            }
-        }
-
-        private static string Duration(float seconds)
-        {
-            int minutes = Mathf.FloorToInt(seconds / 60f);
-            if (minutes < 1)
-            {
-                return "<1 min";
-            }
-
-            return minutes < 60 ? minutes + " min" : minutes / 60 + " h " + minutes % 60 + " min";
-        }
-
-        private static Color FuelColor(float fraction)
-        {
-            if (_fuelGradient == null)
-            {
-                Item_Base item = ItemManager.GetItemByName(GradientItem);
-                _fuelGradient = item != null ? item.BarGradient : null;
-            }
-
-            if (_fuelGradient != null)
-            {
-                return _fuelGradient.Evaluate(Mathf.Clamp01(fraction));
-            }
-
-            return fraction < 0.5f
-                ? Color.Lerp(StatusText.Problem, StatusText.Progress, fraction * 2f)
-                : Color.Lerp(StatusText.Progress, StatusText.Ready, fraction * 2f - 1f);
+            return engines.Lowest.HasValue ? FuelText.Format(engines.Lowest.Value, FuelUse.Off) : null;
         }
     }
 }

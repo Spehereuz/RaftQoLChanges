@@ -1,5 +1,6 @@
 using System;
 using QoLChanges.Core;
+using QoLChanges.GameState;
 using QoLChanges.UI;
 using UnityEngine;
 
