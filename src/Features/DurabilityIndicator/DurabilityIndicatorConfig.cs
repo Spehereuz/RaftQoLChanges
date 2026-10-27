@@ -29,6 +29,10 @@ namespace QoLChanges.Features.DurabilityIndicator
         [JsonConverter(typeof(StringEnumConverter))]
         public DurabilityDisplayMode food = DurabilityDisplayMode.Percent;
 
+        /// <summary>Batteries: charge left.</summary>
+        [JsonConverter(typeof(StringEnumConverter))]
+        public DurabilityDisplayMode batteries = DurabilityDisplayMode.Percent;
+
         /// <summary>When false, items that have not been used yet show no indicator.</summary>
         public bool showAtFullDurability;
 
@@ -37,6 +41,7 @@ namespace QoLChanges.Features.DurabilityIndicator
             tools = Sanitize(tools);
             water = Sanitize(water);
             food = Sanitize(food);
+            batteries = Sanitize(batteries);
         }
 
         private static DurabilityDisplayMode Sanitize(DurabilityDisplayMode mode)

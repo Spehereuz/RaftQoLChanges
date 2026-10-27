@@ -12,6 +12,7 @@ namespace QoLChanges.Features.DurabilityIndicator
         Tools,
         Water,
         Food,
+        Batteries,
     }
 
     /// <summary>
@@ -153,14 +154,7 @@ namespace QoLChanges.Features.DurabilityIndicator
                 case DurabilityDisplayMode.RemainingOfMax:
                     return uses + "/" + max;
                 default:
-                    // Rounded down, so a used item never reads 100%, and a nearly broken one never reads 0%.
-                    int percent = (int)((long)uses * 100 / max);
-                    if (percent == 0 && uses > 0)
-                    {
-                        percent = 1;
-                    }
-
-                    return percent + "%";
+                    return Percent.OfRemaining(uses, max) + "%";
             }
         }
 
@@ -174,6 +168,8 @@ namespace QoLChanges.Features.DurabilityIndicator
                     return _config.water;
                 case DurabilityGroup.Food:
                     return _config.food;
+                case DurabilityGroup.Batteries:
+                    return _config.batteries;
                 default:
                     return DurabilityDisplayMode.Off;
             }
@@ -191,15 +187,15 @@ namespace QoLChanges.Features.DurabilityIndicator
         }
 
         /// <summary>
-        /// Groups items by their properties, so items added by other mods are sorted as well. Batteries are
-        /// left out: their charge belongs to the hover tooltip of placed batteries.
+        /// Groups items by their properties, so items added by other mods are sorted as well. Batteries (and
+        /// batteries of other mods) are recognised by name.
         /// </summary>
         private static DurabilityGroup Classify(Item_Base item)
         {
             string name = item.UniqueName;
             if (!string.IsNullOrEmpty(name) && name.IndexOf("Battery", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return DurabilityGroup.None;
+                return DurabilityGroup.Batteries;
             }
 
             ItemInstance_Consumeable consumable = item.settings_consumeable;

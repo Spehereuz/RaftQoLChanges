@@ -5,8 +5,9 @@ using QoLChanges.Core;
 namespace QoLChanges.Features.DurabilityIndicator
 {
     /// <summary>
-    /// Shows the durability of tools, water containers and food portions as text on their slots, next to the
-    /// vanilla durability bar. Purely visual and client-side: the same value is already shown by the bar.
+    /// Shows the durability of tools, water containers and food portions, and the charge of batteries, as text
+    /// on their slots, next to the vanilla durability bar. Purely visual and client-side: the same value is
+    /// already shown by the bar.
     /// </summary>
     internal sealed class DurabilityIndicatorFeature : Feature
     {
@@ -28,6 +29,7 @@ namespace QoLChanges.Features.DurabilityIndicator
             yield return ModeSetting("Tools and equipment", () => _config.tools, value => _config.tools = value);
             yield return ModeSetting("Water containers", () => _config.water, value => _config.water = value);
             yield return ModeSetting("Food portions", () => _config.food, value => _config.food = value);
+            yield return ModeSetting("Batteries", () => _config.batteries, value => _config.batteries = value);
             yield return new ToggleSetting(
                 "Show at full durability",
                 () => _config.showAtFullDurability,
