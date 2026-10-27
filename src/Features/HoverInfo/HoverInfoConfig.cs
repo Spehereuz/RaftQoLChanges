@@ -27,6 +27,9 @@ namespace QoLChanges.Features.HoverInfo
         /// <summary>Smelters and the paint mill.</summary>
         public bool smelters = true;
 
+        /// <summary>Items in collection nets out of how many they hold.</summary>
+        public bool collectionNets = true;
+
         public override void Normalize()
         {
             if (!Enum.IsDefined(typeof(BatteryDisplayMode), battery))
