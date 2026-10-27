@@ -1,5 +1,4 @@
 using HarmonyLib;
-using QoLChanges.Core;
 using UnityEngine;
 
 namespace QoLChanges.Features.HoverInfo
@@ -9,12 +8,10 @@ namespace QoLChanges.Features.HoverInfo
     /// its own cooking slot: "Salt water · purifying 45%" / "Fresh water ready" for one portion,
     /// "3 purifying (45%) · 2 fresh" for several, where the percentage is the portion closest to being ready.
     /// The electric purifier shows its fresh water tank and whether it pumps: "Fresh water 12/20 · Pumping".
+    /// Purification progress of other players than the host comes from <see cref="CookingTimers"/>.
     /// </summary>
     internal sealed class PurifierHoverInfo : IHoverInfoProvider
     {
-        private static readonly AccessTools.FieldRef<CookingSlot, float> CookTimeMultiplierField =
-            AccessTools.FieldRefAccess<CookingSlot, float>("cookTimeMultiplier");
-
         private static readonly AccessTools.FieldRef<Electric_Purifier, int> BatteryDrainPerPumpField =
             AccessTools.FieldRefAccess<Electric_Purifier, int>("batteryDrainPerPump");
 
@@ -74,7 +71,7 @@ namespace QoLChanges.Features.HoverInfo
                 }
 
                 purifying++;
-                int progress = GetProgress(slot);
+                int progress = CookingTimers.GetProgress(slot);
                 if (progress > bestProgress)
                 {
                     bestProgress = progress;
@@ -98,17 +95,6 @@ namespace QoLChanges.Features.HoverInfo
                 : null;
             string freshText = fresh > 0 ? HoverText.Colored(fresh + " fresh", HoverText.Ready) : null;
             return HoverText.Join(purifyingText, freshText);
-        }
-
-        private static int GetProgress(CookingSlot slot)
-        {
-            ItemInstance_Cookable cookable = slot.CurrentItem.settings_cookable;
-            if (cookable == null)
-            {
-                return 0;
-            }
-
-            return Percent.OfProgress(slot.CookTimer, cookable.CookingTime * CookTimeMultiplierField(slot));
         }
 
         private static string DescribeElectricPurifier(Electric_Purifier purifier)
