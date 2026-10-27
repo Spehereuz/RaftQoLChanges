@@ -5,6 +5,7 @@ using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
+using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
@@ -26,6 +27,7 @@ namespace QoLChanges
             Features.Register(new AutoReplaceFeature(Config.autoReplace));
             Features.Register(new RaftStatusFeature(Config.raftStatus));
             Features.Register(new FullNetFeature(Config.fullNet));
+            Features.Register(new ScarecrowRadiusFeature(Config.scarecrowRadius));
         }
 
         public ModConfig Config { get; }

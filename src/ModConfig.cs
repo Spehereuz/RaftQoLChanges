@@ -5,6 +5,7 @@ using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
+using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
 using QoLChanges.UI;
 
@@ -30,6 +31,8 @@ namespace QoLChanges
         public RaftStatusConfig raftStatus = new RaftStatusConfig();
 
         public FullNetConfig fullNet = new FullNetConfig();
+
+        public ScarecrowRadiusConfig scarecrowRadius = new ScarecrowRadiusConfig();
 
         public MenuConfig menu = new MenuConfig();
 
@@ -65,6 +68,11 @@ namespace QoLChanges
                 fullNet = new FullNetConfig();
             }
 
+            if (scarecrowRadius == null)
+            {
+                scarecrowRadius = new ScarecrowRadiusConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -76,6 +84,7 @@ namespace QoLChanges
             autoReplace.Normalize();
             raftStatus.Normalize();
             fullNet.Normalize();
+            scarecrowRadius.Normalize();
             menu.Normalize();
         }
     }
