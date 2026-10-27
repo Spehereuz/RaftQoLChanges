@@ -94,22 +94,24 @@ namespace QoLChanges.Features.RaftStatus
             int count = 0;
             _thrustLine = -1;
 
-            // Engines need the anchors as well: an anchor that holds the raft stops them.
-            AnchorSummary anchors = _config.anchor || _config.engines ? _anchors.Read() : default(AnchorSummary);
+            // Engines need the anchors as well: an anchor that holds the raft stops them and their fuel.
+            bool showEngines = _config.engines || _config.fuel;
+            AnchorSummary anchors = _config.anchor || showEngines ? _anchors.Read() : default(AnchorSummary);
             if (_config.anchor && anchors.Total > 0)
             {
                 SetLine(count++, RaftStatusIcons.Anchor, RaftStatusText.Anchor(anchors));
             }
 
-            if (_config.engines)
+            EngineSummary engines = showEngines ? RaftEngines.Read() : default(EngineSummary);
+            if (engines.Total > 0)
             {
-                EngineSummary engines = RaftEngines.Read();
-                if (engines.Total > 0)
+                // Until the raft is loaded nothing is rated as too weak.
+                int weight = RaftEngines.ReadWeight() ?? 0;
+                EnginePower power = RaftEngines.GetPower(engines, weight);
+                EngineDrive drive = RaftEngines.GetDrive(engines, anchors.HoldsRaft, power);
+
+                if (_config.engines)
                 {
-                    // Until the raft is loaded nothing is rated as too weak.
-                    int weight = RaftEngines.ReadWeight() ?? 0;
-                    EnginePower power = RaftEngines.GetPower(engines, weight);
-                    EngineDrive drive = RaftEngines.GetDrive(engines, anchors.HoldsRaft, power);
                     if (drive == EngineDrive.Pushing && _config.thrustDirection)
                     {
                         _thrustLine = count;
@@ -119,6 +121,11 @@ namespace QoLChanges.Features.RaftStatus
                     int needed = RaftEngines.EnginesNeeded(engines, weight);
                     string text = RaftStatusText.Engines(engines, drive, power, needed, _config.enginePower);
                     SetLine(count++, RaftStatusIcons.Engine, text);
+                }
+
+                if (_config.fuel)
+                {
+                    SetLine(count++, RaftStatusIcons.Fuel, RaftStatusText.Fuel(engines, drive));
                 }
             }
 

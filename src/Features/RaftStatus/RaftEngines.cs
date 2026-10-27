@@ -35,6 +35,18 @@ namespace QoLChanges.Features.RaftStatus
         TooHeavy,
     }
 
+    /// <summary>Fuel in the tank of one engine.</summary>
+    internal struct EngineFuel
+    {
+        public float Amount;
+        public float Capacity;
+
+        /// <summary>Seconds one unit of fuel lasts while the engine burns fuel.</summary>
+        public float SecondsPerUnit;
+
+        public float Fraction => Capacity > 0f ? Amount / Capacity : 0f;
+    }
+
     /// <summary>State of all engines (motor wheels) on the raft at one moment.</summary>
     internal struct EngineSummary
     {
@@ -57,6 +69,12 @@ namespace QoLChanges.Features.RaftStatus
 
         /// <summary>Foundations one engine moves at full speed (the strongest engine on the raft).</summary>
         public int EngineStrength;
+
+        /// <summary>The emptiest tank of the engines that are switched on; null when none is.</summary>
+        public EngineFuel? LowestSwitchedOn;
+
+        /// <summary>The emptiest tank of all engines.</summary>
+        public EngineFuel? Lowest;
     }
 
     /// <summary>
@@ -74,6 +92,9 @@ namespace QoLChanges.Features.RaftStatus
 
         private static readonly AccessTools.FieldRef<MotorWheel, int> ExtraStrengthField =
             AccessTools.FieldRefAccess<MotorWheel, int>("_extraMotorStrength");
+
+        private static readonly AccessTools.FieldRef<MotorWheel, float> TimePerFuelField =
+            AccessTools.FieldRefAccess<MotorWheel, float>("timePerFuel");
 
         private static readonly AccessTools.FieldRef<RaftBounds> RaftBoundsField =
             AccessTools.StaticFieldRefAccess<RaftBounds>(AccessTools.Field(typeof(RaftWeightManager), "raftBounds"));
@@ -96,10 +117,15 @@ namespace QoLChanges.Features.RaftStatus
 
                 summary.Total++;
                 summary.EngineStrength = Mathf.Max(summary.EngineStrength, StrengthField(motor));
+
+                EngineFuel fuel = ReadFuel(motor);
+                summary.Lowest = Emptier(summary.Lowest, fuel);
                 if (!motor.engineSwitchOn)
                 {
                     continue;
                 }
+
+                summary.LowestSwitchedOn = Emptier(summary.LowestSwitchedOn, fuel);
 
                 if (motor.FuelTank.CurrentTankAmount <= 0f)
                 {
@@ -157,6 +183,21 @@ namespace QoLChanges.Features.RaftStatus
             }
 
             return engines.Thrust.sqrMagnitude < MinThrust * MinThrust ? EngineDrive.NoThrust : EngineDrive.Pushing;
+        }
+
+        private static EngineFuel ReadFuel(MotorWheel motor)
+        {
+            return new EngineFuel
+            {
+                Amount = Mathf.Max(0f, motor.FuelTank.CurrentTankAmount),
+                Capacity = motor.FuelTank.maxCapacity,
+                SecondsPerUnit = TimePerFuelField(motor),
+            };
+        }
+
+        private static EngineFuel Emptier(EngineFuel? current, EngineFuel candidate)
+        {
+            return current.HasValue && current.Value.Fraction <= candidate.Fraction ? current.Value : candidate;
         }
 
         /// <summary>Same as MotorWheel.PushDirection of a running engine.</summary>

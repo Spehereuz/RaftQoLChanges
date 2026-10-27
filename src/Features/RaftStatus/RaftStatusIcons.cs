@@ -8,6 +8,7 @@ namespace QoLChanges.Features.RaftStatus
     {
         public const string Anchor = "Placeable_Anchor_Stationary";
         public const string Engine = "Placeable_MotorWheel";
+        public const string Fuel = "BioFuel";
 
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 

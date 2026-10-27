@@ -23,6 +23,9 @@ namespace QoLChanges.Features.RaftStatus
         /// <summary>Warnings when the running engines are too weak for the size of the raft.</summary>
         public bool enginePower = true;
 
+        /// <summary>The emptiest engine tank and how long it lasts.</summary>
+        public bool fuel = true;
+
         /// <summary>Size of the HUD lines in percent: 75, 100, 125 or 150.</summary>
         public int scale = 100;
 

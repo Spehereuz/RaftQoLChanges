@@ -25,6 +25,23 @@ namespace QoLChanges.Core
             return percent == 0 ? 1 : percent;
         }
 
+        /// <summary>Same as <see cref="OfRemaining(int, int)"/> for amounts that are not whole numbers (fuel, water).</summary>
+        public static int OfRemaining(float value, float max)
+        {
+            if (max <= 0f || value <= 0f)
+            {
+                return 0;
+            }
+
+            if (value >= max)
+            {
+                return 100;
+            }
+
+            int percent = Mathf.FloorToInt(value / max * 100f);
+            return Mathf.Clamp(percent, 1, 99);
+        }
+
         /// <summary>
         /// Progress of something that is not finished yet, rounded down and capped at 99%, so 100% is never
         /// shown before the game marks it as done.
