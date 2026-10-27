@@ -16,7 +16,7 @@ namespace QoLChanges.Features.AutoReplace
             new[] { "Hook_Plastic", "Hook_Scrap", "Hook_Titanium" },
             new[] { "Axe_Stone", "Axe", "Axe_Titanium" },
             new[] { "FishingRod", "FishingRod_Metal" },
-            new[] { "Spear_Wood", "Spear_Scrap", "Sword_Titanium" },
+            new[] { "Spear_Wood", "Spear_Scrap", "Machete", "Sword_Titanium" },
         };
 
         /// <summary>

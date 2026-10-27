@@ -81,7 +81,7 @@ your hand.
 
 | Group | When |
 |---|---|
-| Tools and weapons | A tool or weapon breaks: hooks, axes, fishing rods, spears, the sword, the bow, the shovel, the paddle, the machete, the metal detector, the sweep net, the net gun and others. |
+| Tools and weapons | A tool or weapon breaks: hooks, axes, fishing rods, spears, the machete, the sword, the bow, the shovel, the paddle, the metal detector, the sweep net, the net gun and others. |
 | Food and drinks | The last portion of food or a drink is eaten. |
 | Other consumables | The last item of a stack is placed (storages, grills, decorations and other placeables), planted (seeds, saplings), put into a machine (batteries, fuel, raw food, ores, pot and juicer ingredients, trophies, cassettes), used (healing salves, buff items, mystery packages) or thrown (shark bait, throwable items, fireworks). |
 
@@ -96,7 +96,7 @@ your hand.
   | Hooks | plastic, scrap, titanium |
   | Axes | stone, metal, titanium |
   | Fishing rods | fishing rod, metal fishing rod |
-  | Melee weapons | wooden spear, metal spear, titanium sword |
+  | Melee weapons | wooden spear, metal spear, machete, titanium sword |
 
   Food, consumables, single-tier tools and items of other mods are replaced only by the same item.
 - Only an empty slot is refilled. Water containers and bowls that turn into an empty container after the last sip
