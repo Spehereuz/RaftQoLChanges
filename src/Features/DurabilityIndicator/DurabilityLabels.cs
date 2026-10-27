@@ -227,6 +227,7 @@ namespace QoLChanges.Features.DurabilityIndicator
 
         private static Text CreateLabel(Slot slot, Text amount)
         {
+            float amountScale = RelativeScale(amount.transform, slot.transform);
             GameObject copy = UnityEngine.Object.Instantiate(amount.gameObject, slot.transform, false);
             copy.name = LabelName;
 
@@ -252,6 +253,13 @@ namespace QoLChanges.Features.DurabilityIndicator
             rect.sizeDelta = LabelSize;
             rect.anchoredPosition3D = new Vector3(LabelPosition.x, LabelPosition.y, 0f);
 
+            // The shadow offset is in the text's own units; equipment slots scale their amount text down
+            // (~0.137 with a 15 px offset), so keep the offset the same on screen at scale 1.
+            foreach (Shadow shadow in copy.GetComponents<Shadow>())
+            {
+                shadow.effectDistance *= amountScale;
+            }
+
             int index = amount.transform.parent == slot.transform ? amount.transform.GetSiblingIndex() + 1 : slot.transform.childCount - 1;
             copy.transform.SetSiblingIndex(index);
 
@@ -266,6 +274,19 @@ namespace QoLChanges.Features.DurabilityIndicator
 
             copy.SetActive(true);
             return label;
+        }
+
+        /// <summary>Scale of <paramref name="child"/> as seen from <paramref name="ancestor"/>; 1 when unknown.</summary>
+        private static float RelativeScale(Transform child, Transform ancestor)
+        {
+            float ancestorScale = ancestor.lossyScale.x;
+            if (Mathf.Approximately(ancestorScale, 0f))
+            {
+                return 1f;
+            }
+
+            float scale = child.lossyScale.x / ancestorScale;
+            return scale > 0f ? scale : 1f;
         }
 
         private static void RemoveLabel(Slot slot)
