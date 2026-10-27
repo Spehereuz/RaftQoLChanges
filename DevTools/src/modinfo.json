@@ -1,0 +1,14 @@
+{
+  "name": "QoL Dev Tools",
+  "slug": "qol-dev-tools",
+  "author": "Vladyslav Hardetskyi",
+  "description": "Console commands for testing QoL Changes: give items, set item durability, make tools wear out in Creative. For development only.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "icon": "icon.png",
+  "banner": "banner.png",
+  "gameVersion": "1.1.01",
+  "requiredByAllPlayers": false,
+  "isModPermanent": false,
+  "excludedFiles": []
+}

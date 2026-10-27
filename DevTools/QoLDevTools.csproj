@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Console commands for testing QoL Changes in game. Never published: install the built .rmod locally only. -->
+  <PropertyGroup>
+    <AssemblyName>QoLDevTools</AssemblyName>
+    <RootNamespace>QoLDevTools</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <!-- References, Unity Mono runtime, .rmod packaging and deployment -->
+  <Import Project="..\build\RaftMod.targets" />
+
+</Project>
