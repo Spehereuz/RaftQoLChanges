@@ -3,6 +3,7 @@ using QoLChanges.Core;
 using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.HoverInfo;
+using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.StackSize;
 using QoLChanges.UI;
 
@@ -24,6 +25,8 @@ namespace QoLChanges
         public HoverInfoConfig hoverInfo = new HoverInfoConfig();
 
         public AutoReplaceConfig autoReplace = new AutoReplaceConfig();
+
+        public RaftStatusConfig raftStatus = new RaftStatusConfig();
 
         public MenuConfig menu = new MenuConfig();
 
@@ -49,6 +52,11 @@ namespace QoLChanges
                 autoReplace = new AutoReplaceConfig();
             }
 
+            if (raftStatus == null)
+            {
+                raftStatus = new RaftStatusConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -58,6 +66,7 @@ namespace QoLChanges
             durabilityIndicator.Normalize();
             hoverInfo.Normalize();
             autoReplace.Normalize();
+            raftStatus.Normalize();
             menu.Normalize();
         }
     }

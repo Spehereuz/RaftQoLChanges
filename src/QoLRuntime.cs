@@ -3,6 +3,7 @@ using QoLChanges.Core;
 using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.HoverInfo;
+using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
@@ -22,6 +23,7 @@ namespace QoLChanges
             Features.Register(new DurabilityIndicatorFeature(Config.durabilityIndicator));
             Features.Register(new HoverInfoFeature(Config.hoverInfo));
             Features.Register(new AutoReplaceFeature(Config.autoReplace));
+            Features.Register(new RaftStatusFeature(Config.raftStatus));
         }
 
         public ModConfig Config { get; }
