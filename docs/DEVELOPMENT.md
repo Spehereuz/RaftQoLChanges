@@ -66,6 +66,8 @@ Core/
   FeatureManager   registry, applies config, honours the master switch
   JsonConfigFile   load/merge/normalize/save with Newtonsoft.Json, atomic write
   ModLog           "[QoL Changes] " prefixed Unity log
+  Percent          rounding of shown percentages: remaining (floor, at least 1% above zero),
+                   progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
 UI/                pause menu "Mods" button, window and pages
 ```
@@ -124,6 +126,15 @@ Open the console with `F10`. Commands work on the local player in a loaded world
   name ends with a number use the internal name.
 - Vanilla `Inventory.AddItem(string, int)` is not used: it puts the whole amount into one empty slot
   regardless of the stack size and drops everything when no slot is free.
+
+Hover info check: build a simple and an advanced purifier, an electric purifier and a few crop plots. Give
+batteries (`qoldev.give Battery`, `qoldev.give Battery_Advanced`), set their charge with `qoldev.dur 37%`
+while selected and put them into machines; the text and its colour must match the slot lights, also after
+switching the battery format; in the inventory and storages the same batteries show their charge as durability
+text. Plant seeds and water only some of them; aim at each plant (also its centre) with empty hands and with
+an item, and at the soil around them for the summary of the plot. Pour salt water into the advanced purifier
+several times with fuel burning to see mixed portions. For multiplayer, a second player only needs to compare
+the numbers; nothing is sent over the network.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -185,6 +196,39 @@ Slot_Hotbar / Slot_Inventory_*: ItemImage, AmountText, Slider{Background, Fill A
 - Storage slots are not part of the scene, they are created at runtime; patching
   `Slot.RefreshComponents` covers them without looking for their prefab.
 
+### Interaction prompts and hover info
+
+```
+_CanvasGame_New
+  DisplayTextManager    (DisplayTextManager) centred on the crosshair
+    DisplayTextMiddle   displayTexts[0]: prompt above the crosshair, (0, 56.1), pivot (0.5, 0); Text, Shadow,
+                        Localize, ContentSizeFitter, DisplayText; children: key hint, gamepad icons
+  DisplayTextBottom     DisplayText 1..3 = displayTexts[1..3]: hints at the bottom of the screen
+```
+
+- Objects write their prompt from `IRaycastable.OnIsRayed` every frame, usually with `clearAllTexts`, and hide
+  it with `HideDisplayTexts()`; writing into these texts would fight with the game. Hover info clones
+  `DisplayTextMiddle` without its children and game scripts and places the copy mirrored below the crosshair.
+- `Pickup.Update` of the local player calls `RaycastForRayInteractables()` once per frame
+  (`Helper.FindInteractable`, `Player.UseDistance` x 1.1). It is skipped while a menu is open. The result is a
+  `RaycastInteractable`; its `RaycastableObjects` are the `IRaycastable` components on it plus those added by
+  `RaycastInteractable_Extension`. `OnIsRayed` implementations also check
+  `Helper.LocalPlayerIsWithinDistance(transform.position, Player.UseDistance)`.
+- Plants are not interactables: `PlantManager.HarvestPlants` finds them with
+  `Helper.HitAtCursor(out hit, Player.UseDistance, LayerMasks.MASK_Item)` and tag `Plant` and shows the
+  harvest prompt itself; aimed at a plant, the interactable raycast finds neither the plant nor its crop plot.
+  `Cropplot.OnIsRayed` asks for water only while an item is selected in the hotbar.
+- Plants: `Plant.GetGrowTimer()` / `growTimeSec` (`growTime` minutes x 60), `FullyGrown()`. A slot's
+  `PlantationSlot.hasWater` is set once when watered and cleared only when the plant is removed;
+  `Cropplot.Update` grows plants of slots that `CanGrow` (planted and watered).
+- Cooking stands and fuel purifiers: `Block_CookingStand.cookingSlots`; a slot cooks while busy,
+  `cookTimer` up to `CookingTime x cookTimeMultiplier`, then `IsComplete`. `FakeSlot` slots are occupied by an
+  item of another slot. Simple purifier: 1 slot, advanced: 5.
+- Electric purifier pumps while `battery.CanGiveElectricity`, battery uses >= `batteryDrainPerPump` and the
+  tank is not full (`Tank.CurrentTankAmount`, `maxCapacity`).
+- Battery slots: `Battery.batteryInstance` (uses / `BaseItemMaxUses`), slot lights from `greenLimit`,
+  `yellowLimit`, `orangeLimit` and emissive `green` / `yellow` / `orange` / `red`.
+
 ## Useful game facts
 
 | Area | Types and members |
@@ -196,6 +240,7 @@ Slot_Hotbar / Slot_Inventory_*: ItemImage, AmountText, Slider{Background, Fill A
 | Crafting | `CraftingMenu`, `CostCollection` |
 | Raft | `Anchor_Stationary`, `EngineControls`, `MotorWheel`, `Sail`, `SteeringWheel` |
 | World | `ItemCollector` (`maxNumberOfItems`), `Scarecrow`, `Plant`, `Cropplot`, `Battery`, `Tank`, `Electric_Purifier` |
+| Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |
 | Tools | `Hook`, `ChargeMeter`, `Throwable` |
 | Notebook / research | `NoteBook`, `NoteBookUI`, `ResearchTable`, `Inventory_ResearchTable` |
 | Input | Input System actions; vanilla storage actions `SortPlayerIntoChest`, `SortChest` |
