@@ -5,9 +5,9 @@ namespace QoLChanges.Features.HoverInfo
 {
     /// <summary>
     /// Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water
-    /// purifiers, cooking, smelting. Client-side and read-only: every value is one the game already shows in a
-    /// less precise way (battery slot lights, plant size, water levels, cooking models), nothing is changed or sent
-    /// over the network.
+    /// purifiers, cooking, smelting, engine fuel. Client-side and read-only: every value is one the game already shows
+    /// in a less precise way (battery slot lights, plant size, water levels, cooking models, fuel gauges), nothing is
+    /// changed or sent over the network.
     /// </summary>
     internal sealed class HoverInfoFeature : Feature
     {
@@ -33,6 +33,7 @@ namespace QoLChanges.Features.HoverInfo
                 index => _config.battery = (BatteryDisplayMode)index);
             yield return new ToggleSetting("Plants", () => _config.plants, value => _config.plants = value);
             yield return new ToggleSetting("Water purifiers", () => _config.purifiers, value => _config.purifiers = value);
+            yield return new ToggleSetting("Engine fuel", () => _config.engineFuel, value => _config.engineFuel = value);
             yield return new ToggleSetting("Cooking", () => _config.cooking, value => _config.cooking = value);
             yield return new ToggleSetting("Smelters and paint mill", () => _config.smelters, value => _config.smelters = value);
         }
@@ -60,6 +61,11 @@ namespace QoLChanges.Features.HoverInfo
             if (_config.cooking || _config.smelters)
             {
                 providers.Add(new CookingHoverInfo(_config.cooking, _config.smelters));
+            }
+
+            if (_config.engineFuel)
+            {
+                providers.Add(new EngineHoverInfo());
             }
 
             if (_config.purifiers || _config.cooking || _config.smelters)

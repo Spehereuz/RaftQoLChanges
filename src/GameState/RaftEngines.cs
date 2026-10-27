@@ -198,7 +198,7 @@ namespace QoLChanges.GameState
             return engines.Thrust.sqrMagnitude < MinThrust * MinThrust ? EngineDrive.NoThrust : EngineDrive.Pushing;
         }
 
-        private static EngineFuel ReadFuel(MotorWheel motor)
+        public static EngineFuel ReadFuel(MotorWheel motor)
         {
             return new EngineFuel
             {

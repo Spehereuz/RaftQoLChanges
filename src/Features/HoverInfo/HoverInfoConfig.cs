@@ -18,6 +18,9 @@ namespace QoLChanges.Features.HoverInfo
         /// <summary>Purification progress and fresh water of water purifiers.</summary>
         public bool purifiers = true;
 
+        /// <summary>Fuel of engines (motor wheels).</summary>
+        public bool engineFuel = true;
+
         /// <summary>Grills, cooking pots and juicers.</summary>
         public bool cooking = true;
 
