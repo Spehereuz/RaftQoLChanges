@@ -1,6 +1,7 @@
 using System.IO;
 using QoLChanges.Core;
 using QoLChanges.Features.DurabilityIndicator;
+using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
@@ -18,6 +19,7 @@ namespace QoLChanges
             Features = new FeatureManager();
             Features.Register(new StackSizeFeature(Config.stackSize));
             Features.Register(new DurabilityIndicatorFeature(Config.durabilityIndicator));
+            Features.Register(new HoverInfoFeature(Config.hoverInfo));
         }
 
         public ModConfig Config { get; }
