@@ -2,6 +2,7 @@ using System.IO;
 using QoLChanges.Core;
 using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
+using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.StackSize;
@@ -24,6 +25,7 @@ namespace QoLChanges
             Features.Register(new HoverInfoFeature(Config.hoverInfo));
             Features.Register(new AutoReplaceFeature(Config.autoReplace));
             Features.Register(new RaftStatusFeature(Config.raftStatus));
+            Features.Register(new FullNetFeature(Config.fullNet));
         }
 
         public ModConfig Config { get; }

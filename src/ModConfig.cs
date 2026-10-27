@@ -2,6 +2,7 @@ using System;
 using QoLChanges.Core;
 using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
+using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.StackSize;
@@ -27,6 +28,8 @@ namespace QoLChanges
         public AutoReplaceConfig autoReplace = new AutoReplaceConfig();
 
         public RaftStatusConfig raftStatus = new RaftStatusConfig();
+
+        public FullNetConfig fullNet = new FullNetConfig();
 
         public MenuConfig menu = new MenuConfig();
 
@@ -57,6 +60,11 @@ namespace QoLChanges
                 raftStatus = new RaftStatusConfig();
             }
 
+            if (fullNet == null)
+            {
+                fullNet = new FullNetConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -67,6 +75,7 @@ namespace QoLChanges
             hoverInfo.Normalize();
             autoReplace.Normalize();
             raftStatus.Normalize();
+            fullNet.Normalize();
             menu.Normalize();
         }
     }
