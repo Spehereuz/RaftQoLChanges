@@ -60,6 +60,8 @@ invalid file is left untouched and defaults are used until it is fixed.
 
 ## Development
 
+Architecture, RML specifics and known pitfalls are described in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
 ### Requirements
 
 - Windows with Raft (Steam) and RaftModLoader
