@@ -118,8 +118,12 @@ To set paths manually, copy `local.props.example` to `local.props` and edit it.
 dotnet build -c Release
 ```
 
-or **Build** in Visual Studio. Each build produces `bin\<Config>\QoLChanges.rmod` and copies it
-into `<Raft>\mods` (set `DeployToGame` to `false` in `local.props` to disable).
+or **Build** in Visual Studio. The solution builds two mods and copies both into `<Raft>\mods`
+(set `DeployToGame` to `false` in `local.props` to disable):
+
+- `bin\<Config>\QoLChanges.rmod` — the mod itself;
+- `DevTools\bin\<Config>\QoLDevTools.rmod` — console commands for testing, never published
+  (see [Testing in game](docs/DEVELOPMENT.md#testing-in-game)).
 
 RML compiles the `.cs` files from the `.rmod` itself when the game starts. The local build is
 there for IntelliSense, compile-time checks against the real game assemblies and packaging.
@@ -139,6 +143,8 @@ src/                 everything here is packed into the .rmod
                      pause and settings menus at runtime, so no game assets are shipped
   icon.png           512x512
   banner.png         660x200
+DevTools/            QoL Dev Tools: separate development-only mod with its own src/ and modinfo.json
+build/RaftMod.targets  shared build of both mods: references, Unity Mono runtime, .rmod packaging
 tools/Sync-Libs.ps1  restores lib\ from the Raft and RML folders
 lib/                 game and RML assemblies (not committed)
 ```
@@ -153,7 +159,8 @@ lib/                 game and RML assemblies (not committed)
 
 1. Bump `version` in `src/modinfo.json` and `<Version>` in `QoLChanges.csproj`.
 2. `dotnet build -c Release`
-3. Tag `vX.Y.Z` and attach `bin\Release\QoLChanges.rmod` to a GitHub release.
+3. Tag `vX.Y.Z` and attach `bin\Release\QoLChanges.rmod` to a GitHub release. `QoLDevTools.rmod`
+   is never attached.
 
 ## License
 

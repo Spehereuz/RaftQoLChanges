@@ -18,6 +18,8 @@ Technical notes for working on QoL Changes. Setup, build and release steps are i
 - Highest supported language version is **C# 7.3**: no nullable reference types, switch expressions,
   `??=`, file-scoped namespaces, records, `init`, target-typed `new`. The project enforces this with
   `<LangVersion>7.3</LangVersion>`.
+- The local build (`build/RaftMod.targets`, shared by `QoLChanges.csproj` and
+  `DevTools/QoLDevTools.csproj`) mirrors this for compile checks and packs `src\` into the `.rmod`.
 - Compile references: every DLL in `Raft_Data\Managed` **except** `Newtonsoft.Json.dll`, plus
   publicized `Assembly-CSharp`, `PlayFab`, `FMODUnity`, `com.rlabrecque.steamworks.net` and RML's
   `AssemblyLoader` (`HMLCoreLibrary.dll`), which also bundles Newtonsoft.Json.
@@ -89,6 +91,44 @@ restored on the next load.
   (`Message_Storage_Close`) and applied without clamping; `StorageManager.OpenStorage/CloseStorage`
   lock a storage to one player. Changes to storages must go through that open/close cycle.
 - Keep `requiredByAllPlayers` false unless a feature truly needs every player to run it.
+
+## Testing in game
+
+Most features are tested in a **Creative** world. Creative has no item menu: it knows every recipe
+and crafting costs nothing, but items without a recipe (cooked food, filled canteens, loot) still have
+to be obtained the usual way. `DevTools/` is a second mod, **QoL Dev Tools**, with console commands
+that give any item and set up the situations a survival world needs hours for. It is built and deployed together with QoL Changes (both projects
+import `build/RaftMod.targets`), but is never attached to releases. It changes game state directly,
+so it is only for testing; disable it in the RML mod manager for normal play.
+
+Open the console with `F10`. Commands work on the local player in a loaded world:
+
+| Command | Effect |
+|---|---|
+| `qoldev.find <text>` | Lists items whose internal or English name contains the text: `Cooked_Catfish - Cooked catfish`. |
+| `qoldev.give <item> [amount]` | Adds items (default 1) by internal name or exact English name, as many as fit; stacks are never overfilled and nothing is dropped. |
+| `qoldev.dur <uses\|percent%>` | Sets the durability of the item in the selected hotbar slot. |
+| `qoldev.dur.all <uses\|percent%\|random>` | Same for every item with a durability bar in the hotbar, inventory, equipment and the open storage. `random` picks 1..max per item. |
+| `qoldev.wear <on\|off>` | Creative only: tools lose durability as in Normal mode. Reverted on `off`, when returning to the main menu and when the mod is unloaded. |
+
+- Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
+- Durability is changed through `Slot.SetUses`, like the game does: `0` breaks a tool, turns a
+  canteen into an empty one and eats one piece of a food stack.
+- Storage slots changed while the storage is open are synchronised when it is closed, as usual.
+- Creative tool settings live in the shared `SO_GameModeValue` asset (`toolVariables`:
+  `areToolsIndestructible = true`, `toolDurabilityLossMultiplier = 0`); `qoldev.wear` swaps them and
+  restores the originals.
+
+- `qoldev.give` reads the last argument as the amount when it is a number; for items whose English
+  name ends with a number use the internal name.
+- Vanilla `Inventory.AddItem(string, int)` is not used: it puts the whole amount into one empty slot
+  regardless of the stack size and drops everything when no slot is free.
+
+Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
+`qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
+`qoldev.dur.all random`, then compare the text with the bars; `qoldev.dur 1` and
+`qoldev.dur 0` cover the near-broken and broken cases, `qoldev.wear on` and a few hits with a tool
+cover the update after real use.
 
 ## Game UI reference
 
