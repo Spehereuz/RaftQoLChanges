@@ -56,7 +56,8 @@ Technical notes for working on QoL Changes. Setup, build and release steps are i
 ```
 QoLChangesMod      RML entry point: creates QoLRuntime and ModMenu, tears both down on unload
 QoLRuntime         owns ModConfig + FeatureManager; every change from the menu goes through it and is saved
-ModConfig          root of config.json: master "enabled" + one section per feature
+ModConfig          root of config.json: master "enabled" + one section per feature + "menu" (UI/MenuConfig:
+                   features expanded on the settings page)
 Core/
   Feature          base class: id, display name, config, own Harmony instance, Enable/Disable/Reapply
   FeatureConfig    base config section ("enabled"); override Normalize() to clamp values
@@ -136,7 +137,15 @@ Templates are cloned at runtime from the game scene (`UI/RaftUiTemplates`), so n
 distributed. Game scripts are stripped from clones (`UI/RaftUi.Clone`), keeping `ButtonSound`,
 `TextChangeButton` and `UiMagnet`; serialized `Button`, `Toggle`, `Slider` and `Dropdown` listeners
 are dropped. Row templates: "Quick build" (toggle), "MasterVolume" (slider), "Language" (dropdown,
-`GeneralSettingsBox.dropdown_language`; its `Localize` and `SetLanguageDropdown` are stripped).
+`GeneralSettingsBox.dropdown_language`; its `Localize` and `SetLanguageDropdown` are stripped). The
+dropdown's `Arrow` image (points down) is the expand arrow of feature headers, turned 90° when collapsed.
+
+- Native rows carry a background `Image` on the row root that is enabled on some rows and disabled
+  on others ("MasterVolume" has none). `RaftUiRows` sets it explicitly: `RowStyle.Header` (feature or
+  mod) has the background, `RowStyle.Option` has none and is indented by 60 px.
+- Header row: label (left edge at x 8.4, shifted 30 px for the arrow), toggle at 45 px from the right
+  edge. A transparent button covers the row except the right 80 px, so the name and the arrow expand
+  the feature and the toggle stays separate.
 
 ```
 _CanvasPausMenu (PauseMenu)
@@ -167,8 +176,9 @@ Slot_Hotbar / Slot_Inventory_*: ItemImage, AmountText, Slider{Background, Fill A
 ```
 
 - `AmountText` (`Slot.textComponent`): top-left corner, 74.1x31.5 at (39.9, -17.5), font 24,
-  UpperLeft. Shown only when `Amount > 1`. In equipment slots it is a copy scaled by ~0.137 with
-  font 200, so do not copy its geometry.
+  UpperLeft, `Shadow` (2, -2). Shown only when `Amount > 1`. In equipment slots it is a copy scaled by
+  ~0.137 with font 200 and shadow (15, -13.63), so neither its geometry nor its shadow offset can be
+  copied as is: the offset has to be multiplied by that scale.
 - Durability bar (`Slot.sliderComponent`): shown when `Item_Base.MaxUses > 1`, value
   `ItemInstance.NormalizedUses`, fill colour `Item_Base.BarGradient.Evaluate(value)`. Tools use a
   red → yellow → green gradient, water containers flat cyan, food flat yellow.

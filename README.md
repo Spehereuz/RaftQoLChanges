@@ -44,8 +44,9 @@ own mode (Off, Percent, Remaining, Remaining / max):
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
 switched off as a whole from there, and **Settings** opens its page where each feature has its own
-toggle and options. Changes apply immediately and are saved to the config file. Esc or the close
-button goes one level back.
+toggle. Click the arrow or the name of a feature to show or hide its options; all features start
+collapsed and the expanded ones are remembered. Changes apply immediately and are saved to the config
+file. Esc or the close button goes one level back.
 
 ### Disabling a feature
 
@@ -72,6 +73,9 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "food": "Percent",
     "showAtFullDurability": false,
     "enabled": true
+  },
+  "menu": {
+    "expandedFeatures": []
   }
 }
 ```
@@ -79,7 +83,8 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
 The top-level `enabled` switches the whole mod off while keeping each feature's own settings.
 The in-game menu is the intended way to change settings; when editing the file by hand, do it while
 the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
-Durability modes are `Off`, `Percent`, `Remaining` and `RemainingOfMax`. An invalid file is left
+Durability modes are `Off`, `Percent`, `Remaining` and `RemainingOfMax`. `menu.expandedFeatures` lists
+the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
 
 ## Installation
