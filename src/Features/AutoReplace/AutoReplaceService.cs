@@ -179,7 +179,22 @@ namespace QoLChanges.Features.AutoReplace
         private static Slot FindReplacement(PlayerInventory inventory, Item_Base usedItem, ReplaceCategory category)
         {
             int uniqueIndex = usedItem.UniqueIndex;
-            return FindBest(inventory, item => item.UniqueIndex == uniqueIndex, category);
+            Slot exact = FindBest(inventory, item => item.UniqueIndex == uniqueIndex, category);
+            if (exact != null || category != ReplaceCategory.Tools || !_config.useOtherTiers)
+            {
+                return exact;
+            }
+
+            foreach (string tierName in ToolTiers.GetReplacementOrder(usedItem.UniqueName))
+            {
+                Slot other = FindBest(inventory, item => item.UniqueName == tierName, category);
+                if (other != null)
+                {
+                    return other;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

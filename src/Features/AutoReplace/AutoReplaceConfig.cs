@@ -8,5 +8,10 @@ namespace QoLChanges.Features.AutoReplace
     {
         /// <summary>Tools and weapons that break in the selected hotbar slot.</summary>
         public bool tools = true;
+
+        /// <summary>
+        /// When no copy of a broken tool is left, use another tier of the same tool: a better one first, then a worse one.
+        /// </summary>
+        public bool useOtherTiers = true;
     }
 }

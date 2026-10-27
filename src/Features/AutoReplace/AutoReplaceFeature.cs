@@ -4,8 +4,8 @@ using QoLChanges.Core;
 namespace QoLChanges.Features.AutoReplace
 {
     /// <summary>
-    /// When the item in the selected hotbar slot is used up (a tool breaks), moves the same item from the main
-    /// inventory into the slot and selects it. Client-side: only the local player's inventory changes, the same way
+    /// When the item in the selected hotbar slot is used up (a tool breaks), moves the same item, or another tier
+    /// of a broken tool, from the main inventory into the slot and selects it. Client-side: only the local player's inventory changes, the same way
     /// as moving the item by hand; dropping, moving or storing items never triggers it.
     /// </summary>
     internal sealed class AutoReplaceFeature : Feature
@@ -23,6 +23,7 @@ namespace QoLChanges.Features.AutoReplace
         public override IEnumerable<FeatureSetting> GetSettings()
         {
             yield return new ToggleSetting("Tools and weapons", () => _config.tools, value => _config.tools = value);
+            yield return new ToggleSetting("Use other tiers", () => _config.useOtherTiers, value => _config.useOtherTiers = value);
         }
 
         protected override void OnEnable()
