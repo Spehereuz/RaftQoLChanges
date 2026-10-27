@@ -69,7 +69,8 @@ Core/
   Percent          rounding of shown percentages: remaining (floor, at least 1% above zero),
                    progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
-GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel)
+GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel),
+                   ItemNets (fill state of collection nets)
 UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
                    one section per feature), StatusText (coloured rich-text values for hover info and the HUD)
 ```
@@ -116,6 +117,7 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 | `qoldev.dur.all <uses\|percent%\|random>` | Same for every item with a durability bar in the hotbar, inventory, equipment and the open storage. `random` picks 1..max per item. |
 | `qoldev.wear <on\|off>` | Creative only: tools lose durability as in Normal mode. Reverted on `off`, when returning to the main menu and when the mod is unloaded. |
 | `qoldev.fuel <units\|percent%>` | Host only: sets the fuel of every engine on the raft (a tank holds 50 units) and sends it to other players like the game does. |
+| `qoldev.net <count\|full\|clear>` | Host only: empties the collection net under the crosshair and fills it with that many pieces of debris (`full`: up to its limit, `clear`: empty), sent to other players like the game does. Nothing goes into the inventory. |
 
 - Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
 - Durability is changed through `Slot.SetUses`, like the game does: `0` breaks a tool, turns a
@@ -166,6 +168,16 @@ foundations: `2 needed · Too heavy` and fuel `paused`; remove foundations down 
 and onto an island: the HUD disappears. Switch off each line, the arrow and the power warnings, change **HUD size**
 and restart the game: the settings stay. In a Normal world, check that the raft really moves where the arrow points and
 that the fuel time goes down by a minute per minute. For multiplayer, a second player compares the lines with the host.
+
+Full net check: build a basic and an advanced collection net. Aim at each: `Items 0/10` / `Items 0/15`. `qoldev.net 9` on the
+basic net: `Items 9/10`, no glow; `qoldev.net full`: `Full 10/10` in red and the net glows dark red; `qoldev.net full` on the
+advanced net: `Full 15/15`. If the paint brush can paint nets, paint one before filling it; aim the hammer at a full net to remove
+it: paint and the hammer outline stay, the glow stays with them. Collect the items with the interact key: the glow goes away at once;
+`qoldev.net clear` does the same. Fill a net, save, return to the main menu and load the world: the net glows again. Switch the
+feature off and on with a full net in sight, and switch off **Collection nets** in Hover info. Compare the glow with the red
+preview of a block that cannot be placed: the net must look darker and redder; at night the glow must still be visible. In a
+Normal world, let a net fill up by itself while sailing. For multiplayer, the host fills a net and a second player sees the same
+count and glow, then collects the items; the glow goes away for both.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -313,6 +325,28 @@ _CanvasGame_New
 - Without engine thrust the raft drifts with open sails (`Sail.AllSails`) and the current; Creative sets
   `raftSpecificVariables.isRaftAlwaysAnchored` and keeps the raft in place.
 
+## Collection nets
+
+- A net is a `Block_Foundation_ItemNet` with `ItemNet` (the interactable: "Collect N items" prompt, `itemCollector`) and an
+  `ItemCollector` on its child `_netObjectCollider` with `playerControlled = false`; the hook has an `ItemCollector` too, with
+  `playerControlled` and no limit.
+- Limit: private `maxNumberOfItems`, `Placeable_CollectionNet_Basic` 10, `Placeable_CollectionNet_Advanced` 15, 0 = no limit.
+  `OnTriggerEnter` ignores debris while `collectedItems.Count >= maxNumberOfItems` and items that `requiresHands` (barrels).
+- Only the host collects: it sends `ItemCollectorCollect` and calls `CollectItem`, other players run `CollectItem` from the
+  message. Collecting by hand (`AddCollectedItemsToPlayer`) sends `ItemCollectorClear` with the player; every game calls
+  private `ClearCollectedItems(player)`, which removes the items and gives them to that player only on that player's game.
+  Loading a world or joining (`Message_ItemCollectorCreate`) restores the items through `CollectItem`, so postfixes on
+  `CollectItem` and `ClearCollectedItems` see every change on every player.
+- Collected items are parented to the collector and keep their models, so the net's own renderer is
+  `OccupyingComponent.renderers` (found in `Awake`, before anything is collected), not every renderer below the block.
+- The net's material uses the `BlockPaint` shader (`GameManager.blockPaintShader`). The game changes placed blocks through
+  property blocks on `OccupyingComponent.renderers`, always reading the block first: paint (`_Side1_*`, `_Side2_*`,
+  `_PaintSide`), the hammer outline (`_Destroy_Overlay`). Block previews keep their materials and get `_BuildingEmission`
+  through `MaterialRendConnection`: `GameManager.shaderGreen` (0.54, 0.75, 0.27) or `shaderRed` (0.86, 0.16, 0.24).
+  Full net indicator sets `_BuildingEmission` (0.4, 0.06, 0.04) on placed nets and restores the material's value.
+- Debris spawners: `ObjectSpawnerManager.plankSpawner` and `itemSpawner` (both `ObjectSpawner_RaftDirection`);
+  `ObjectSpawner.SpawnItemNetwork` spawns on the host and sends the item to other players.
+
 ## Using up items
 
 Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
@@ -349,7 +383,7 @@ slots, so moving items by hand never looks like using them up.
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
 | Crafting | `CraftingMenu`, `CostCollection` |
 | Raft | `Raft` (`AnchorCount`, `remoteAnchors`), `Anchor_Stationary`, `Anchor_Throwable_Stand`, `EngineControls`, `MotorWheel` (`FuelTank`, `engineSwitchOn`, `rotatesForward`), `RaftVelocityManager`, `RaftWeightManager`, `Sail`, `SteeringWheel` |
-| World | `ItemCollector` (`maxNumberOfItems`), `Scarecrow`, `Plant`, `Cropplot`, `Battery`, `Tank`, `Electric_Purifier` |
+| World | `ItemCollector` (`maxNumberOfItems`, `collectedItems`), `ItemNet`, `Scarecrow`, `Plant`, `Cropplot`, `Battery`, `Tank`, `Electric_Purifier` |
 | Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |
 | Tools | `Hook`, `ChargeMeter`, `Throwable` |
 | Notebook / research | `NoteBook`, `NoteBookUI`, `ResearchTable`, `Inventory_ResearchTable` |
