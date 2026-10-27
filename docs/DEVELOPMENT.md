@@ -69,7 +69,8 @@ Core/
   Percent          rounding of shown percentages: remaining (floor, at least 1% above zero),
                    progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
-UI/                pause menu "Mods" button, window and pages
+UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
+                   one section per feature), StatusText (coloured rich-text values for hover info and the HUD)
 ```
 
 Settings always persist: every change made in the menu is written to `config.json` immediately and
@@ -113,6 +114,7 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 | `qoldev.dur <uses\|percent%>` | Sets the durability of the item in the selected hotbar slot. |
 | `qoldev.dur.all <uses\|percent%\|random>` | Same for every item with a durability bar in the hotbar, inventory, equipment and the open storage. `random` picks 1..max per item. |
 | `qoldev.wear <on\|off>` | Creative only: tools lose durability as in Normal mode. Reverted on `off`, when returning to the main menu and when the mod is unloaded. |
+| `qoldev.fuel <units\|percent%>` | Host only: sets the fuel of every engine on the raft (a tank holds 50 units) and sends it to other players like the game does. |
 
 - Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
 - Durability is changed through `Slot.SetUses`, like the game does: `0` breaks a tool, turns a
@@ -148,6 +150,19 @@ stack: the smaller stack from the inventory moves in. Place the last storage or 
 a purifier, throw the last shark bait. Drink the last sip from a canteen: the empty canteen stays. Drop the last item with
 `Q`, move it with the mouse, put it into a storage or craft with it: the slot stays empty. Switch off each group and
 **Use other tiers** and repeat one case of it.
+
+Raft status check: in Creative the raft never moves (`isRaftAlwaysAnchored`), but anchors, engines and fuel work, which is
+all the HUD reads. Stand on the raft and build a stationary anchor: `Free`; use it: `Dropping`, then `Anchored`; use it
+again: `Raising`, then `Free`. Add an advanced anchor with Engine controls and a throwable anchor stand and throw the
+anchor: `Dropping`, `Anchored`, `2/3 down` and so on. Build two engines, `qoldev.fuel 50%`: `0/2 running`, fuel `50%`
+without time. Switch one on: `1/2 running`, an arrow, `50% · 25 min`; turn around and look up and down, the arrow must
+keep pointing where the engine pushes; press its direction lever and the Engine controls reverse button: the arrow flips.
+Turn the second engine the other way and switch it on: `No thrust`. Drop an anchor: `Held by anchor`, fuel `paused`.
+`qoldev.fuel 0` with both on: `0/2 running · 2 no fuel`, fuel `Empty`. With one engine running build more than 110
+foundations: `2 needed · Too heavy` and fuel `paused`; remove foundations down to 101..110: `Weak`. Swim off the raft
+and onto an island: the HUD disappears. Switch off each line, the arrow and the power warnings, change **HUD size**
+and restart the game: the settings stay. In a Normal world, check that the raft really moves where the arrow points and
+that the fuel time goes down by a minute per minute. For multiplayer, a second player compares the lines with the host.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -187,6 +202,22 @@ _SCP_3_Settings/_CanvasOptionMenu (Settings.optionsCanvas)
 - `PauseMenu.Update` closes the menu on cancel unless `ignoreCancel` is set; the flag is reset at
   the end of every `Update`.
 - `CanvasHelper.ActiveMenu == MenuType.PauseMenu` while the pause menu is open.
+
+### HUD
+
+```
+_CanvasGame_New (CanvasHelper)
+  Stat sliders          CanvasHelper.StatSliderParent, bottom-left corner, 364x257
+    Health (16, 43), HungerBar (16, 97), Thirst (16, 151): UISlider_Stat, 276x47, pivot (0, 0.5);
+                        StatIconBG 43x47 at the left edge of each bar
+    QoLChanges_HudPanel  HudPanel: sections stacked upwards from 12 px above the highest bar
+  BuffDisplayer         bottom centre above the hotbar
+  InventoryPickup       bottom right, picked up items
+  Notification*         top right
+```
+
+- HUD lines use the font and shadow of the interaction prompt (`DisplayTextMiddle`) and centre their 32 px icons on the
+  stat icons. Arrows use the sprite of the settings dropdown arrow, which points down.
 
 ### Item slots
 
@@ -254,6 +285,31 @@ _CanvasGame_New
   `greenLimit`, `yellowLimit`, `orangeLimit` and turn yellow early; hover info uses the item's `BarGradient`
   instead, like the durability text in the inventory.
 
+## Raft: anchors and engines
+
+- `Raft.AnchorCount` / `IsAnchored` are counted on the host: `Anchor_Stationary.DropAnchor` adds an anchor as soon as it
+  starts dropping, `WeighAnchor` removes it when it starts rising, a thrown anchor is added when it reaches the bottom
+  (`Anchor_Throwable_Stand.OnAnchorHit`). Other players do not keep the count up to date, so the HUD derives the state
+  from the anchors: stationary `AtBottom` / `DroppingAnchor` / `weighingAnchor`, throwable stand `FullyAnchored` /
+  `HasThrownAnchor`. The game keeps no list of anchors; they are found with `FindObjectsOfType` once a second and
+  filtered by `Block.hasBeenPlaced` (the block preview has the same components).
+- Advanced anchors are `Anchor_Stationary` with `remoteControlled` (`Raft.remoteAnchors`); Engine controls toggle them
+  through the static `EngineControls.AnchorsAreDown`. Its power button calls `OnButtonPressed_ToggleEngine` on every
+  engine, so it inverts each engine separately and a mixed state stays mixed.
+- Engines: `RaftVelocityManager.Motors` (placed engines, on every player). `MotorWheel.MotorState` is
+  `engineSwitchOn && FuelTank.CurrentTankAmount > 0`, but its getter fires `OnMotorDirty` on a change, so the HUD reads
+  the fields. `PushDirection` is the engine's own `transform.forward` (flattened), negated when `rotatesForward`: the
+  direction depends on how each engine was placed.
+- Strength: `_motorStrenght` 100 and `_extraMotorStrength` 10 foundations per running engine;
+  `RaftWeightManager.FoundationWeight` is the foundation count capped at 600. `RaftVelocityManager.MotorWheelWeightStrength`:
+  anchored or weight > strength + extra → `NotStrongEnough` (`MotorDirection` is zero, engines burn no fuel),
+  weight > strength → `Weak` (half speed), else `StrongEnough`.
+- Fuel: `MotorwheelFuelTank` (a `Tank`) holds `maxCapacity` 50; a running engine burns 1 unit per `timePerFuel` (60 s)
+  unless `NotStrongEnough`. The host sends the level to other players when the gauge changes
+  (`Tank.SendTankSetValueMessage`).
+- Without engine thrust the raft drifts with open sails (`Sail.AllSails`) and the current; Creative sets
+  `raftSpecificVariables.isRaftAlwaysAnchored` and keeps the raft in place.
+
 ## Using up items
 
 Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
@@ -289,7 +345,7 @@ slots, so moving items by hand never looks like using them up.
 | Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`, `GetSelectedHotbarSlot`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` (`GetSelectedSlotIndex`, `ReselectCurrentSlot`) |
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
 | Crafting | `CraftingMenu`, `CostCollection` |
-| Raft | `Anchor_Stationary`, `EngineControls`, `MotorWheel`, `Sail`, `SteeringWheel` |
+| Raft | `Raft` (`AnchorCount`, `remoteAnchors`), `Anchor_Stationary`, `Anchor_Throwable_Stand`, `EngineControls`, `MotorWheel` (`FuelTank`, `engineSwitchOn`, `rotatesForward`), `RaftVelocityManager`, `RaftWeightManager`, `Sail`, `SteeringWheel` |
 | World | `ItemCollector` (`maxNumberOfItems`), `Scarecrow`, `Plant`, `Cropplot`, `Battery`, `Tank`, `Electric_Purifier` |
 | Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |
 | Tools | `Hook`, `ChargeMeter`, `Throwable` |

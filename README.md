@@ -22,6 +22,7 @@ self-contained and can be switched on or off independently.
 | Durability indicator | `durabilityIndicator` | on, `Percent` for every group | Writes the durability of items that have a durability bar on their slot, and the charge of batteries: `73%`, `88` or `88/120`, coloured like the bar. |
 | Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers, cooking and smelting. |
 | Auto-replace tool | `autoReplace` | on, every group | When the item in the selected hotbar slot breaks or is used up, moves the same item from the inventory into the slot; a broken tool can be replaced by another tier of the same tool. |
+| Raft status HUD | `raftStatus` | on, every line, 100% | While you are on the raft, lines above the health bar show whether the raft is anchored, how many engines run and where they push it, whether they are strong enough for the raft and how long their fuel lasts. |
 
 ### Durability indicator
 
@@ -106,6 +107,36 @@ your hand.
 - Client-side: only your own inventory changes, the same way as moving the item by hand. Other players do not need
   the mod.
 
+### Raft status HUD
+
+While you stand on the raft, up to three lines appear above the health, hunger and thirst bars, each with the icon of
+the matching item. A line is shown only when the raft has the thing it describes.
+
+```
+[anchor]  Anchored · 2/3 down
+[engine]  3/3 running  ->
+[fuel]    72% · 36 min
+```
+
+| Line | Shows |
+|---|---|
+| Anchor | `Anchored` (green) when an anchor is at the bottom, `Dropping` or `Raising` (yellow) while one moves, `Free` otherwise. With several anchors also `2/3 down`. Stationary, advanced and thrown anchors are counted. |
+| Engines | `2/3 running`: engines that are switched on and have fuel, out of all engines. Engines switched on with an empty tank add `1 no fuel` (red). An arrow shows where the running engines push the raft, relative to where you look. |
+| Fuel | The emptiest tank of the switched-on engines, coloured like a tool's durability, and how long it lasts: `72% · 36 min`. `Empty` when one of them has no fuel left. With every engine switched off, the emptiest tank of all engines without the time. |
+
+- The raft stops as soon as an anchor starts dropping. While an anchor holds the raft, running engines only strain and
+  burn no fuel: the engine line reads `Held by anchor` and the fuel line `paused`.
+- One engine moves 100 foundations at full speed and 10 more at half speed. **Engine power** adds `Weak` (yellow) when
+  the raft is slightly too heavy and `4 needed · Too heavy` (red) when the engines cannot move it at all; such engines
+  burn no fuel either (`paused`). Nothing is added while the engines are strong enough.
+- `No thrust` means the running engines push in opposite directions and cancel each other out.
+- A tank holds 50 units of fuel and a running engine burns one unit a minute, so a full tank lasts 50 minutes.
+- Each line, the arrow and the power warnings can be switched off; **HUD size** scales the lines from 75% to 150%.
+- Client-side and read-only. Engine levers, fuel and anchors are synchronised by the game, so every player sees the
+  same raft; the fuel of other players' engines may differ slightly from the host until the host sends the tank level
+  again.
+- In Creative the raft never moves, but the HUD still shows what the anchors and engines do.
+
 ### In-game menu
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
@@ -120,7 +151,8 @@ Stacks larger than the vanilla limit are saved as they are and are not clamped b
 After disabling Stack size they stay intact: you can take items out of them, but cannot add more until
 they drop below the vanilla limit.
 
-Durability indicator and Hover info only add text to the game's UI and leave nothing behind when disabled.
+Durability indicator, Hover info and Raft status HUD only add text to the game's UI and leave nothing behind when
+disabled.
 Auto-replace tool only moves items that you could move by hand; disabling it changes nothing.
 
 ## Configuration
@@ -157,6 +189,15 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "consumables": true,
     "enabled": true
   },
+  "raftStatus": {
+    "anchor": true,
+    "engines": true,
+    "thrustDirection": true,
+    "enginePower": true,
+    "fuel": true,
+    "scale": 100,
+    "enabled": true
+  },
   "menu": {
     "expandedFeatures": []
   }
@@ -166,7 +207,8 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
 The top-level `enabled` switches the whole mod off while keeping each feature's own settings.
 The in-game menu is the intended way to change settings; when editing the file by hand, do it while
 the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
-Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`. `menu.expandedFeatures` lists
+Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`.
+The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. `menu.expandedFeatures` lists
 the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
 
@@ -228,7 +270,8 @@ src/                 everything here is packed into the .rmod
                      settings, JSON config, logging
   Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
   UI/                pause menu "Mods" button and window; widgets are cloned from Raft's own
-                     pause and settings menus at runtime, so no game assets are shipped
+                     pause and settings menus at runtime, so no game assets are shipped; the
+                     shared HUD panel above the stat bars
   icon.png           512x512
   banner.png         660x200
 DevTools/            QoL Dev Tools: separate development-only mod with its own src/ and modinfo.json
