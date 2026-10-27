@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using QoLChanges.UI;
 using UnityEngine;
 
 namespace QoLChanges.Features.HoverInfo
@@ -154,14 +155,14 @@ namespace QoLChanges.Features.HoverInfo
             }
 
             string text = cooking > 0
-                ? cooking + " " + Verb(kind) + " (" + HoverText.Colored(bestProgress + "%", HoverText.Progress) + ")"
+                ? cooking + " " + Verb(kind) + " (" + StatusText.Colored(bestProgress + "%", StatusText.Progress) + ")"
                 : null;
             if (ready > 0)
             {
-                text = HoverText.Join(text, HoverText.Colored(ready + " ready", HoverText.Ready));
+                text = StatusText.Join(text, StatusText.Colored(ready + " ready", StatusText.Ready));
             }
 
-            return cooking > 0 ? HoverText.Join(text, StandProblem(stand)) : text;
+            return cooking > 0 ? StatusText.Join(text, StandProblem(stand)) : text;
         }
 
         private static string DescribeSlot(Block_CookingStand stand, StandKind kind, CookingSlot slot)
@@ -169,12 +170,12 @@ namespace QoLChanges.Features.HoverInfo
             Item_Base item = slot.CurrentItem;
             if (slot.IsComplete)
             {
-                return HoverText.Colored(ResultName(item) + " ready", HoverText.Ready);
+                return StatusText.Colored(ResultName(item) + " ready", StatusText.Ready);
             }
 
-            string text = Name(item) + HoverText.Separator + Verb(kind) + " "
-                + HoverText.Colored(CookingTimers.GetProgress(slot) + "%", HoverText.Progress);
-            return HoverText.Join(text, StandProblem(stand));
+            string text = Name(item) + StatusText.Separator + Verb(kind) + " "
+                + StatusText.Colored(CookingTimers.GetProgress(slot) + "%", StatusText.Progress);
+            return StatusText.Join(text, StandProblem(stand));
         }
 
         private static string DescribeTable(CookingTable table)
@@ -190,15 +191,15 @@ namespace QoLChanges.Features.HoverInfo
             if (portions > 0)
             {
                 string amount = portions + (portions == 1 ? " portion" : " portions");
-                return name + HoverText.Separator + HoverText.Colored(amount, HoverText.Ready);
+                return name + StatusText.Separator + StatusText.Colored(amount, StatusText.Ready);
             }
 
             bool juicer = table is CookingTable_Juicer;
-            string text = name + HoverText.Separator + (juicer ? "blending " : "cooking ")
-                + HoverText.Colored(CookingTimers.GetProgress(table) + "%", HoverText.Progress);
+            string text = name + StatusText.Separator + (juicer ? "blending " : "cooking ")
+                + StatusText.Colored(CookingTimers.GetProgress(table) + "%", StatusText.Progress);
             if (!CookingTimers.IsRunning(table))
             {
-                text = HoverText.Join(text, HoverText.Colored(juicer ? NoPowerText : NoFuelText, HoverText.Problem));
+                text = StatusText.Join(text, StatusText.Colored(juicer ? NoPowerText : NoFuelText, StatusText.Problem));
             }
 
             return text;
@@ -212,7 +213,7 @@ namespace QoLChanges.Features.HoverInfo
                 return null;
             }
 
-            return HoverText.Colored(stand.fuel != null ? NoFuelText : NoPowerText, HoverText.Problem);
+            return StatusText.Colored(stand.fuel != null ? NoFuelText : NoPowerText, StatusText.Problem);
         }
 
         /// <summary>

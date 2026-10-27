@@ -1,6 +1,7 @@
 using System;
 using HarmonyLib;
 using QoLChanges.Core;
+using QoLChanges.UI;
 using UnityEngine;
 
 namespace QoLChanges.Features.HoverInfo
@@ -49,7 +50,7 @@ namespace QoLChanges.Features.HoverInfo
             ItemInstance instance = BatteryInstanceField(battery);
             int max = instance.BaseItemMaxUses;
             int uses = Mathf.Clamp(instance.Uses, 0, max);
-            text = "Battery " + HoverText.Colored(Format(uses, max), ChargeColor(instance.baseItem, uses, max));
+            text = "Battery " + StatusText.Colored(Format(uses, max), ChargeColor(instance.baseItem, uses, max));
             return true;
         }
 

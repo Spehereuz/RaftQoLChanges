@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using QoLChanges.Core;
+using QoLChanges.UI;
 using UnityEngine;
 
 namespace QoLChanges.Features.HoverInfo
@@ -120,16 +121,16 @@ namespace QoLChanges.Features.HoverInfo
             }
 
             string text = growing > 0
-                ? growing + " growing (" + HoverText.Colored(bestProgress + "%", HoverText.Progress) + ")"
+                ? growing + " growing (" + StatusText.Colored(bestProgress + "%", StatusText.Progress) + ")"
                 : null;
             if (ready > 0)
             {
-                text = HoverText.Join(text, HoverText.Colored(ready + " ready", HoverText.Ready));
+                text = StatusText.Join(text, StatusText.Colored(ready + " ready", StatusText.Ready));
             }
 
             if (needWater > 0)
             {
-                text = HoverText.Join(text, HoverText.Colored(needWater + " needs water", HoverText.Problem));
+                text = StatusText.Join(text, StatusText.Colored(needWater + " needs water", StatusText.Problem));
             }
 
             return text;
@@ -140,11 +141,11 @@ namespace QoLChanges.Features.HoverInfo
             switch (state)
             {
                 case PlantState.Ready:
-                    return HoverText.Colored("Ready to harvest", HoverText.Ready);
+                    return StatusText.Colored("Ready to harvest", StatusText.Ready);
                 case PlantState.Growing:
-                    return "Growing " + HoverText.Colored(GetProgress(plant) + "%", HoverText.Progress);
+                    return "Growing " + StatusText.Colored(GetProgress(plant) + "%", StatusText.Progress);
                 default:
-                    return HoverText.Colored("Needs water", HoverText.Problem);
+                    return StatusText.Colored("Needs water", StatusText.Problem);
             }
         }
 

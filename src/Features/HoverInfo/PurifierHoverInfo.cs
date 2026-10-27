@@ -1,4 +1,5 @@
 using HarmonyLib;
+using QoLChanges.UI;
 using UnityEngine;
 
 namespace QoLChanges.Features.HoverInfo
@@ -86,15 +87,15 @@ namespace QoLChanges.Features.HoverInfo
             if (purifying + fresh == 1)
             {
                 return fresh == 1
-                    ? HoverText.Colored("Fresh water ready", HoverText.Ready)
-                    : "Salt water" + HoverText.Separator + "purifying " + HoverText.Colored(bestProgress + "%", HoverText.Progress);
+                    ? StatusText.Colored("Fresh water ready", StatusText.Ready)
+                    : "Salt water" + StatusText.Separator + "purifying " + StatusText.Colored(bestProgress + "%", StatusText.Progress);
             }
 
             string purifyingText = purifying > 0
-                ? purifying + " purifying (" + HoverText.Colored(bestProgress + "%", HoverText.Progress) + ")"
+                ? purifying + " purifying (" + StatusText.Colored(bestProgress + "%", StatusText.Progress) + ")"
                 : null;
-            string freshText = fresh > 0 ? HoverText.Colored(fresh + " fresh", HoverText.Ready) : null;
-            return HoverText.Join(purifyingText, freshText);
+            string freshText = fresh > 0 ? StatusText.Colored(fresh + " fresh", StatusText.Ready) : null;
+            return StatusText.Join(purifyingText, freshText);
         }
 
         private static string DescribeElectricPurifier(Electric_Purifier purifier)
@@ -107,8 +108,8 @@ namespace QoLChanges.Features.HoverInfo
 
             int amount = Mathf.FloorToInt(tank.CurrentTankAmount);
             int capacity = Mathf.RoundToInt(tank.maxCapacity);
-            string water = "Fresh water " + HoverText.Colored(amount + "/" + capacity, HoverText.Water);
-            return HoverText.Join(water, DescribeMachineState(purifier, tank));
+            string water = "Fresh water " + StatusText.Colored(amount + "/" + capacity, StatusText.Water);
+            return StatusText.Join(water, DescribeMachineState(purifier, tank));
         }
 
         /// <summary>Same conditions as Electric_Purifier.Update, which decides whether the pump runs.</summary>
@@ -116,7 +117,7 @@ namespace QoLChanges.Features.HoverInfo
         {
             if (tank.IsFull || tank.CurrentTankAmount > tank.maxCapacity)
             {
-                return HoverText.Colored("Full", HoverText.Ready);
+                return StatusText.Colored("Full", StatusText.Ready);
             }
 
             Battery battery = purifier.battery;
@@ -124,8 +125,8 @@ namespace QoLChanges.Features.HoverInfo
                 && battery.CanGiveElectricity
                 && battery.BatteryUses >= BatteryDrainPerPumpField(purifier);
             return powered
-                ? HoverText.Colored("Pumping", HoverText.Progress)
-                : HoverText.Colored("No power", HoverText.Problem);
+                ? StatusText.Colored("Pumping", StatusText.Progress)
+                : StatusText.Colored("No power", StatusText.Problem);
         }
     }
 }

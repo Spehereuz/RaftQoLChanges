@@ -1,9 +1,12 @@
 using UnityEngine;
 
-namespace QoLChanges.Features.HoverInfo
+namespace QoLChanges.UI
 {
-    /// <summary>Building blocks of hover info lines: labels stay white, values are coloured with rich text.</summary>
-    internal static class HoverText
+    /// <summary>
+    /// Building blocks of status texts shown during play (hover info, HUD): labels stay white, values are coloured
+    /// with rich text.
+    /// </summary>
+    internal static class StatusText
     {
         public const string Separator = " · ";
 
