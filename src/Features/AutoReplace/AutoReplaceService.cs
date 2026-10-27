@@ -10,6 +10,7 @@ namespace QoLChanges.Features.AutoReplace
     internal enum ReplaceCategory
     {
         Tools,
+        Food,
     }
 
     /// <summary>
