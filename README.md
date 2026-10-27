@@ -24,6 +24,7 @@ self-contained and can be switched on or off independently.
 | Auto-replace tool | `autoReplace` | on, every group | When the item in the selected hotbar slot breaks or is used up, moves the same item from the inventory into the slot; a broken tool can be replaced by another tier of the same tool. |
 | Raft status HUD | `raftStatus` | on, every line, 100% | While you are on the raft, lines above the health bar show whether the raft is anchored, how many engines run and where they push it, whether they are strong enough for the raft and how long their fuel lasts. |
 | Full net indicator | `fullNet` | on | Collection nets glow red while they are full and catch nothing more. |
+| Scarecrow radius | `scarecrowRadius` | on, crop plots lit, 4 cm lines | While the hammer or a scarecrow is selected, outlines where scarecrows keep seagulls away and lights crop plots green inside and red outside of it. |
 
 ### Durability indicator
 
@@ -62,6 +63,7 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
 | Cooking pot, juicer | `Fish stew · cooking 45%` / `Smoothie · blending 45%`, then `Fish stew · 3 portions` |
 | Engine (any part of it) | `Fuel 72% · 36 min` while it burns fuel, `Fuel 72% · paused` while it runs but an anchor holds the raft or the raft is too heavy, `Fuel 72%` when switched off, `Fuel Empty`. Same text and colours as the fuel line of the [Raft status HUD](#raft-status-hud), which shows only the emptiest engine. |
 | Collection net | `Items 7/10` (also `Items 0/10` for an empty net), `Full 10/10` in red once it catches nothing more. A net without a limit (from another mod) shows only the count. |
+| Scarecrow | `Parts 2/3` for a basic scarecrow, coloured like a tool's durability: a seagull pecks off one part per attack and the scarecrow breaks after the last one. `Indestructible` for an advanced scarecrow. `· seagull` while a seagull sits on it. |
 
 - A plant grows only after it has been watered once and then grows until it is harvested. The game asks
   for water only while you hold an item; `Needs water` is shown with empty hands as well.
@@ -70,7 +72,7 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
 - Grills, smelters and pots add `· no fuel` / `· no power` while something waits because the fire is out or
   the battery is off or empty. Ingredients in a pot that has not started cooking show nothing.
 - Each target group can be switched off separately: Batteries, Plants, Water purifiers, Engine fuel, Cooking
-  (grills, cooking pot, juicer), Smelters and paint mill, Collection nets. The battery slot is described on its own, aiming at the
+  (grills, cooking pot, juicer), Smelters and paint mill, Collection nets, Scarecrows. The battery slot is described on its own, aiming at the
   rest of a machine does not show its battery.
 - Client-side and read-only. Plant timers run on every player's game and the host announces when a plant is
   ready. Cooking and purifying timers run only on the host; other players' games advance their own copy with
@@ -153,6 +155,27 @@ floats past. While a net is full, it glows dark red, day and night, until you co
 - Client-side and purely visual, no settings and no key. The host collects the debris and tells every player, so every
   player with the mod sees the same nets glow; other players do not need the mod.
 
+### Scarecrow radius
+
+Seagulls look for crop plots every few minutes and leave a plot alone while a scarecrow stands within 6 m of its centre:
+they peck a basic scarecrow instead, one part per attack, and ignore the crops near an advanced one. While the hammer or a
+scarecrow is selected and no menu is open, a line on the floor shows this zone around every placed scarecrow: yellow for basic
+scarecrows, which break, green for advanced ones. A crop plot whose centre is inside the line is protected.
+
+- The distance is measured from the scarecrow's pole (basic) or body (advanced), so the line is a rectangle with rounded corners,
+  about 6.1–6.3 m from the centre of a basic scarecrow and 6.1–6.7 m of an advanced one.
+- The scarecrow you are placing gets a half-transparent line in the green or red of the game's preview.
+- **Highlight crop plots** lights crop plots that seagulls may attack: green inside a zone, red outside. Empty plots are lit too;
+  large crop plots are never attacked and never lit. The preview of a scarecrow counts while it can be placed, so you see which
+  plots it would protect.
+- The zone is a sphere, so it also reaches crop plots on the floors around the scarecrow: about 5.9 m one floor up, 4.7 m (advanced:
+  5.1 m) two floors up, 5.6 m one floor down and 3.9 m two floors down. **Neighbouring floors** draws those lines too, fainter. The crop
+  plot highlight always counts every floor.
+- Lines are hidden behind walls and blocks like the rest of the world. **Line width** sets their width from 2 to 10 cm.
+- The radius is read from the seagulls, so a radius changed by another mod is shown as well.
+- Client-side and purely visual. Seagulls are controlled by the host, but every player has the same scarecrows and crop
+  plots, so every player sees the same zones; other players do not need the mod.
+
 ### In-game menu
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
@@ -168,7 +191,8 @@ After disabling Stack size they stay intact: you can take items out of them, but
 they drop below the vanilla limit.
 
 Durability indicator, Hover info and Raft status HUD only add text to the game's UI and leave nothing behind when
-disabled. Full net indicator removes the glow from every net when disabled.
+disabled. Full net indicator removes the glow from every net when disabled. Scarecrow radius removes its lines and the
+light of crop plots as soon as the hammer or scarecrow is put away or the feature is disabled.
 Auto-replace tool only moves items that you could move by hand; disabling it changes nothing.
 
 ## Configuration
@@ -198,6 +222,7 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "cooking": true,
     "smelters": true,
     "collectionNets": true,
+    "scarecrows": true,
     "enabled": true
   },
   "autoReplace": {
@@ -219,6 +244,14 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
   "fullNet": {
     "enabled": true
   },
+  "scarecrowRadius": {
+    "withHammer": true,
+    "withScarecrow": true,
+    "neighbouringFloors": false,
+    "cropPlots": true,
+    "lineWidth": 4,
+    "enabled": true
+  },
   "menu": {
     "expandedFeatures": []
   }
@@ -229,7 +262,8 @@ The top-level `enabled` switches the whole mod off while keeping each feature's 
 The in-game menu is the intended way to change settings; when editing the file by hand, do it while
 the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
 Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`.
-The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. `menu.expandedFeatures` lists
+The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. The scarecrow `lineWidth` is in centimetres,
+clamped to 2–10. `menu.expandedFeatures` lists
 the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
 
@@ -290,7 +324,8 @@ src/                 everything here is packed into the .rmod
   Core/              feature base class (own Harmony instance per feature), declarative feature
                      settings, JSON config, logging
   Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
-  GameState/         game state read by several features (raft anchors, engines and fuel, collection nets)
+  GameState/         game state read by several features (raft anchors, engines and fuel, collection nets,
+                     scarecrow zones)
   UI/                pause menu "Mods" button and window; widgets are cloned from Raft's own
                      pause and settings menus at runtime, so no game assets are shipped; the
                      shared HUD panel above the stat bars

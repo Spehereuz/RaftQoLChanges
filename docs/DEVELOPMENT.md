@@ -70,9 +70,10 @@ Core/
                    progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
 GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel),
-                   ItemNets (fill state of collection nets)
+                   ItemNets (fill state of collection nets), Scarecrows (zones, parts, sitting seagulls)
 UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
-                   one section per feature), StatusText (coloured rich-text values for hover info and the HUD)
+                   one section per feature), StatusText (coloured rich-text values for hover info and the HUD),
+                   ToolDurabilityColor (red-yellow-green of tool bars for fuel and scarecrow parts)
 ```
 
 Settings always persist: every change made in the menu is written to `config.json` immediately and
@@ -117,6 +118,7 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 | `qoldev.dur.all <uses\|percent%\|random>` | Same for every item with a durability bar in the hotbar, inventory, equipment and the open storage. `random` picks 1..max per item. |
 | `qoldev.wear <on\|off>` | Creative only: tools lose durability as in Normal mode. Reverted on `off`, when returning to the main menu and when the mod is unloaded. |
 | `qoldev.fuel <units\|percent%>` | Host only: sets the fuel of every engine on the raft (a tank holds 50 units) and sends it to other players like the game does. |
+| `qoldev.scarecrow [parts]` | Host only: removes that many parts (default 1) of the basic scarecrow under the crosshair through `Scarecrow.DamageScarecrow`, like a pecking seagull, sent to other players like the game does. After the last part the game removes the scarecrow 3 seconds later. |
 | `qoldev.net <count\|full\|clear>` | Host only: empties the collection net under the crosshair and fills it with that many pieces of debris (`full`: up to its limit, `clear`: empty), sent to other players like the game does. Nothing goes into the inventory. |
 
 - Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
@@ -178,6 +180,21 @@ feature off and on with a full net in sight, and switch off **Collection nets** 
 preview of a block that cannot be placed: the net must look darker and redder; at night the glow must still be visible. In a
 Normal world, let a net fill up by itself while sailing. For multiplayer, the host fills a net and a second player sees the same
 count and glow, then collects the items; the glow goes away for both.
+
+Scarecrow radius check: build crop plots of every size (small, medium, shoe, wall, ceiling, large) around the raft, a basic and
+an advanced scarecrow. Select the hammer: a yellow line around the basic scarecrow, a green one around the advanced one, at the
+height of the crop plots and hidden behind walls; crop plots inside a line glow green, outside red, the large ones never, empty
+ones too. Select a scarecrow from the hotbar: its preview has a half-transparent green line while it can be placed and a red one
+where it cannot, and crop plots it would protect turn green only while the preview is green. Open the inventory, the build menu
+and the pause menu: lines and glow disappear and come back after closing. Put the hammer away: the crop plots get their own look
+back, paint and the hammer outline included. Build crop plots one and two floors above and below and switch on **Neighbouring
+floors**: fainter lines there, smaller further away; the glow matches the lines on every floor. Change **Line width** from 2 to
+10 cm, switch off **With hammer**, **With scarecrow** and **Highlight crop plots** one by one and restart the game: the settings
+stay. Aim at the basic scarecrow: `Parts 3/3`; `qoldev.scarecrow`: `Parts 2/3`, the head or an arm falls off; `qoldev.scarecrow 2`:
+destroyed, its line disappears and the plots around it turn red. Aim at the advanced one: `Indestructible`; `qoldev.scarecrow`
+refuses. In a Normal world, wait for a seagull on a basic scarecrow: `Parts 3/3 · seagull`, then one part less. Plant crops just
+outside a line and just inside it and watch which ones seagulls attack. For multiplayer, a second player compares the lines, the
+glow and `Parts` with the host while the host runs `qoldev.scarecrow`.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -347,6 +364,30 @@ _CanvasGame_New
 - Debris spawners: `ObjectSpawnerManager.plankSpawner` and `itemSpawner` (both `ObjectSpawner_RaftDirection`);
   `ObjectSpawner.SpawnItemNetwork` spawns on the host and sends the item to other players.
 
+## Seagulls and scarecrows
+
+- Seagulls (`Seagull`, prefab in `sharedassets1.assets`) are controlled by the host: every `searchCropInterval` (4) minutes
+  `FindCropplotAndNest` goes through `PlantManager.allCropplots` (placed crop plots) while
+  `seagullVariables.attacksCrops` is set. A plot is a target when it is `peckable` (the large plots are not), `ContainsCrops`,
+  visible from the seagull and no player is within `searchPlayerRadius` (2.25 m) of it.
+- `GetScarecrowInVicinity`: `Physics.OverlapSphere` around the centre of the plot's `mainCollider` with `searchScarecrowRadius`
+  (6 m) and `itemSearchMask` (Block, Item, BakedBlocks, RemotePlayer, LocalPlayer), colliders tagged `Scarecrow`. A scarecrow that is
+  `Occupied` (a seagull is on its way to it or sits on it) stops the whole search; one with `Health > 0` protects the plot: an
+  invulnerable one is skipped, a basic one becomes the target instead of the crops. Only the host sets `Occupied` and
+  `targetScarecrow`; every player gets the seagull's `currentState` (`Peck` while it sits).
+- Tagged colliders: basic `Placeable_ScareCrow` — child `BlockCollider`, box 0.25 x 1.4 x 0.6 at (0, 0.745, 0.01); advanced
+  `Placeable_Scarecrow_Advanced` — box on the root, 0.46 x 1.92 x 1.2 at (-0.1, 1.0, -0.06). The sphere around the plot touches the
+  box, so the zone is the box grown by 6 m: a rounded rectangle on the scarecrow's floor, a smaller one on the floors around it
+  (`BlockCreator.FullFloorHeight` 2.42 m). Crop plot centres are 0.1–0.45 m above their floor (wall and ceiling plots differ).
+- Basic scarecrow: `parts` are its head and arms (3); `Seagull.Peck` → `DamageScarecrow` (host: RPC + `RemovePart`, others ask
+  the host), `RemovePart` runs on every player; at 0 parts the host removes the block after 3 s. `invurnerable` scarecrows have no
+  parts and `Health` 1. A seagull lands on the child tagged `BirdLanding`.
+- Scarecrows are not interactables. The preview of a placeable is `BlockCreator.selectedBlock` (`hasBeenPlaced` false); the local
+  `BlockCreator.Update` calls `OccupyingComponent.SetNewMaterial` with `GameManager.ghostMaterialGreen` / `ghostMaterialRed` every
+  frame, which is how Scarecrow radius knows whether the preview can be placed.
+- Lines use `Sprites/Default` (always included: vertex colour, alpha blending, depth test, no depth write). Crop plot models use
+  `BlockPaint`; Scarecrow radius lights them with `_BuildingEmission` (0.1, 0.3, 0.05) / (0.4, 0.06, 0.04) like Full net indicator.
+
 ## Using up items
 
 Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
@@ -383,7 +424,7 @@ slots, so moving items by hand never looks like using them up.
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
 | Crafting | `CraftingMenu`, `CostCollection` |
 | Raft | `Raft` (`AnchorCount`, `remoteAnchors`), `Anchor_Stationary`, `Anchor_Throwable_Stand`, `EngineControls`, `MotorWheel` (`FuelTank`, `engineSwitchOn`, `rotatesForward`), `RaftVelocityManager`, `RaftWeightManager`, `Sail`, `SteeringWheel` |
-| World | `ItemCollector` (`maxNumberOfItems`, `collectedItems`), `ItemNet`, `Scarecrow`, `Plant`, `Cropplot`, `Battery`, `Tank`, `Electric_Purifier` |
+| World | `ItemCollector` (`maxNumberOfItems`, `collectedItems`), `ItemNet`, `Scarecrow` (`parts`, `invurnerable`, `Occupied`), `Seagull` (`searchScarecrowRadius`, `currentState`), `PlantManager.allCropplots`, `Plant`, `Cropplot` (`peckable`, `mainCollider`), `Battery`, `Tank`, `Electric_Purifier` |
 | Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |
 | Tools | `Hook`, `ChargeMeter`, `Throwable` |
 | Notebook / research | `NoteBook`, `NoteBookUI`, `ResearchTable`, `Inventory_ResearchTable` |
