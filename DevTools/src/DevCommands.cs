@@ -191,6 +191,27 @@ namespace QoLDevTools
             });
         }
 
+        [ConsoleCommand(
+            name: "qoldev.fuel",
+            docs: "Host only: sets the fuel of every engine on the raft, in units (a tank holds 50) or percent of the tank. Syntax: " + EngineFuel.Syntax)]
+        public static string Fuel(string[] args)
+        {
+            return Run(() =>
+            {
+                if (args == null || args.Length != 1)
+                {
+                    return "Syntax: " + EngineFuel.Syntax;
+                }
+
+                if (!TryGetLocalPlayer(out Network_Player _, out string error))
+                {
+                    return error;
+                }
+
+                return EngineFuel.Set(args[0]);
+            });
+        }
+
         /// <summary>The last argument is the amount when it is a number; everything before it is the name.</summary>
         private static bool TryParseGiveArgs(string[] args, out string name, out int amount, out string error)
         {
