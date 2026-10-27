@@ -24,6 +24,7 @@ namespace QoLChanges.Features.RaftStatus
             yield return new ToggleSetting("Anchor", () => _config.anchor, value => _config.anchor = value);
             yield return new ToggleSetting("Engines", () => _config.engines, value => _config.engines = value);
             yield return new ToggleSetting("Thrust direction", () => _config.thrustDirection, value => _config.thrustDirection = value);
+            yield return new ToggleSetting("Engine power", () => _config.enginePower, value => _config.enginePower = value);
             yield return new IntSliderSetting(
                 "HUD size",
                 RaftStatusConfig.MinScale / RaftStatusConfig.ScaleStep,

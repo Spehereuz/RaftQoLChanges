@@ -20,6 +20,9 @@ namespace QoLChanges.Features.RaftStatus
         /// <summary>Arrow of the direction the running engines push the raft, relative to the camera.</summary>
         public bool thrustDirection = true;
 
+        /// <summary>Warnings when the running engines are too weak for the size of the raft.</summary>
+        public bool enginePower = true;
+
         /// <summary>Size of the HUD lines in percent: 75, 100, 125 or 150.</summary>
         public int scale = 100;
 

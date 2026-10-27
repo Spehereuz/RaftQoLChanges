@@ -28,8 +28,11 @@ namespace QoLChanges.Features.RaftStatus
             return anchors.Total > 1 ? StatusText.Join(state, anchors.Down + "/" + anchors.Total + " down") : state;
         }
 
-        /// <summary>"2/3 running", followed by engines without fuel and why the engines do not move the raft.</summary>
-        public static string Engines(EngineSummary engines, EngineDrive drive)
+        /// <summary>
+        /// "2/3 running", followed by engines without fuel, why the engines do not move the raft and, when
+        /// <paramref name="showPower"/> is set, whether they are strong enough for it.
+        /// </summary>
+        public static string Engines(EngineSummary engines, EngineDrive drive, EnginePower power, int needed, bool showPower)
         {
             string text = engines.Running + "/" + engines.Total + " running";
             if (engines.NoFuel > 0)
@@ -41,8 +44,16 @@ namespace QoLChanges.Features.RaftStatus
             {
                 case EngineDrive.HeldByAnchor:
                     return StatusText.Join(text, StatusText.Colored("Held by anchor", StatusText.Progress));
+                case EngineDrive.TooHeavy:
+                    return showPower
+                        ? StatusText.Join(text, StatusText.Colored(needed + " needed" + StatusText.Separator + "Too heavy", StatusText.Problem))
+                        : text;
                 case EngineDrive.NoThrust:
                     return StatusText.Join(text, StatusText.Colored("No thrust", StatusText.Progress));
+                case EngineDrive.Pushing:
+                    return showPower && power == EnginePower.Weak
+                        ? StatusText.Join(text, StatusText.Colored("Weak", StatusText.Progress))
+                        : text;
                 default:
                     return text;
             }

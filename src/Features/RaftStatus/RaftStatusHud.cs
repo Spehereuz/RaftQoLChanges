@@ -106,14 +106,19 @@ namespace QoLChanges.Features.RaftStatus
                 EngineSummary engines = RaftEngines.Read();
                 if (engines.Total > 0)
                 {
-                    EngineDrive drive = RaftEngines.GetDrive(engines, anchors.HoldsRaft);
+                    // Until the raft is loaded nothing is rated as too weak.
+                    int weight = RaftEngines.ReadWeight() ?? 0;
+                    EnginePower power = RaftEngines.GetPower(engines, weight);
+                    EngineDrive drive = RaftEngines.GetDrive(engines, anchors.HoldsRaft, power);
                     if (drive == EngineDrive.Pushing && _config.thrustDirection)
                     {
                         _thrustLine = count;
                         _thrust = engines.Thrust;
                     }
 
-                    SetLine(count++, RaftStatusIcons.Engine, RaftStatusText.Engines(engines, drive));
+                    int needed = RaftEngines.EnginesNeeded(engines, weight);
+                    string text = RaftStatusText.Engines(engines, drive, power, needed, _config.enginePower);
+                    SetLine(count++, RaftStatusIcons.Engine, text);
                 }
             }
 
