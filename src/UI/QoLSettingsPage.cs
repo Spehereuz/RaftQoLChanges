@@ -64,6 +64,43 @@ namespace QoLChanges.UI
                 return;
             }
 
+            ToggleSetting toggle = setting as ToggleSetting;
+            if (toggle != null)
+            {
+                RaftUiRows.CreateToggleRow(
+                    templates,
+                    content,
+                    toggle.Label,
+                    toggle.Value,
+                    interactable,
+                    value =>
+                    {
+                        toggle.Value = value;
+                        runtime.ApplyFeatureSettings(feature);
+                    },
+                    true);
+                return;
+            }
+
+            ChoiceSetting choice = setting as ChoiceSetting;
+            if (choice != null)
+            {
+                RaftUiRows.CreateDropdownRow(
+                    templates,
+                    content,
+                    choice.Label,
+                    choice.Options,
+                    choice.Value,
+                    interactable,
+                    true,
+                    value =>
+                    {
+                        choice.Value = value;
+                        runtime.ApplyFeatureSettings(feature);
+                    });
+                return;
+            }
+
             ModLog.Warning("Unsupported setting type " + setting.GetType().Name + " in " + feature.Id + ".");
         }
     }

@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace QoLChanges.UI
 {
-    /// <summary>Settings-style rows built from the native "Quick build" and "Master volume" rows.</summary>
+    /// <summary>Settings-style rows built from the native "Quick build", "Master volume" and "Language" rows.</summary>
     internal static class RaftUiRows
     {
         private const float IndentWidth = 40f;
@@ -23,10 +24,20 @@ namespace QoLChanges.UI
         }
 
         public static Toggle CreateToggleRow(
-            RaftUiTemplates templates, Transform parent, string label, bool isOn, bool interactable, Action<bool> onChanged)
+            RaftUiTemplates templates,
+            Transform parent,
+            string label,
+            bool isOn,
+            bool interactable,
+            Action<bool> onChanged,
+            bool indented = false)
         {
             GameObject row = CreateRowBase(templates.ToggleRow, parent, "Row_" + label, out Text text);
             RaftUi.SetText(text, label);
+            if (indented)
+            {
+                Indent(text);
+            }
 
             Toggle toggle = row.GetComponentInChildren<Toggle>(true);
             toggle.SetIsOnWithoutNotify(isOn);
@@ -81,6 +92,46 @@ namespace QoLChanges.UI
             ApplyInteractableTint(valueText, interactable);
             DimWhenDisabled(slider.gameObject, interactable);
             return slider;
+        }
+
+        /// <summary>Row with the native dropdown of the "Language" setting; the value is the option index.</summary>
+        public static Dropdown CreateDropdownRow(
+            RaftUiTemplates templates,
+            Transform parent,
+            string label,
+            IEnumerable<string> options,
+            int value,
+            bool interactable,
+            bool indented,
+            Action<int> onChanged)
+        {
+            GameObject row = CreateRowBase(templates.DropdownRow, parent, "Row_" + label, out Text text);
+            RaftUi.SetText(text, label);
+            if (indented)
+            {
+                Indent(text);
+            }
+
+            Dropdown dropdown = row.GetComponentInChildren<Dropdown>(true);
+            dropdown.ClearOptions();
+            dropdown.AddOptions(new List<string>(options));
+            dropdown.SetValueWithoutNotify(value);
+            dropdown.RefreshShownValue();
+            dropdown.interactable = interactable;
+
+            int lastValue = value;
+            dropdown.onValueChanged.AddListener(current =>
+            {
+                if (current != lastValue)
+                {
+                    lastValue = current;
+                    onChanged(current);
+                }
+            });
+
+            ApplyInteractableTint(text, interactable);
+            DimWhenDisabled(dropdown.gameObject, interactable);
+            return dropdown;
         }
 
         /// <summary>Button styled like the pause menu buttons, anchored to the right edge of a row.</summary>

@@ -149,6 +149,11 @@ namespace QoLChanges.UI
             {
                 slider.onValueChanged = new Slider.SliderEvent();
             }
+
+            foreach (Dropdown dropdown in root.GetComponentsInChildren<Dropdown>(true))
+            {
+                dropdown.onValueChanged = new Dropdown.DropdownEvent();
+            }
         }
     }
 }

@@ -22,6 +22,9 @@ namespace QoLChanges.UI
         private static readonly AccessTools.FieldRef<GeneralSettingsBox, Toggle> QuickBuildToggleField =
             AccessTools.FieldRefAccess<GeneralSettingsBox, Toggle>("toggle_QuickBuild");
 
+        private static readonly AccessTools.FieldRef<GeneralSettingsBox, Dropdown> LanguageDropdownField =
+            AccessTools.FieldRefAccess<GeneralSettingsBox, Dropdown>("dropdown_language");
+
         private RaftUiTemplates()
         {
         }
@@ -43,6 +46,9 @@ namespace QoLChanges.UI
 
         /// <summary>"Master volume" row: label + slider + value text.</summary>
         public GameObject SliderRow { get; private set; }
+
+        /// <summary>"Language" row: label + dropdown.</summary>
+        public GameObject DropdownRow { get; private set; }
 
         public static bool TryFind(PauseMenu pauseMenu, out RaftUiTemplates templates, out string error)
         {
@@ -86,6 +92,13 @@ namespace QoLChanges.UI
                 return false;
             }
 
+            Dropdown language = LanguageDropdownField(general);
+            if (language == null || language.transform.parent == null)
+            {
+                error = "language dropdown row not found";
+                return false;
+            }
+
             templates = new RaftUiTemplates
             {
                 PauseButton = settingsMagnet.gameObject,
@@ -94,6 +107,7 @@ namespace QoLChanges.UI
                 SettingsScrollView = general.gameObject,
                 ToggleRow = quickBuild.transform.parent.gameObject,
                 SliderRow = slider.gameObject,
+                DropdownRow = language.transform.parent.gameObject,
             };
             return true;
         }

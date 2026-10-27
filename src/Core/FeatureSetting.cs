@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace QoLChanges.Core
 {
@@ -47,6 +48,58 @@ namespace QoLChanges.Core
         public string Format(int value)
         {
             return _formatter(value);
+        }
+    }
+
+    internal sealed class ToggleSetting : FeatureSetting
+    {
+        private readonly Func<bool> _getter;
+        private readonly Action<bool> _setter;
+
+        public ToggleSetting(string label, Func<bool> getter, Action<bool> setter)
+            : base(label)
+        {
+            _getter = getter ?? throw new ArgumentNullException(nameof(getter));
+            _setter = setter ?? throw new ArgumentNullException(nameof(setter));
+        }
+
+        public bool Value
+        {
+            get { return _getter(); }
+            set { _setter(value); }
+        }
+    }
+
+    /// <summary>One value out of a fixed list, shown as a dropdown. The value is the index of the option.</summary>
+    internal sealed class ChoiceSetting : FeatureSetting
+    {
+        private readonly Func<int> _getter;
+        private readonly Action<int> _setter;
+
+        public ChoiceSetting(string label, IList<string> options, Func<int> getter, Action<int> setter)
+            : base(label)
+        {
+            if (options == null || options.Count == 0)
+            {
+                throw new ArgumentException("At least one option is required.", nameof(options));
+            }
+
+            Options = new List<string>(options).AsReadOnly();
+            _getter = getter ?? throw new ArgumentNullException(nameof(getter));
+            _setter = setter ?? throw new ArgumentNullException(nameof(setter));
+        }
+
+        public IReadOnlyList<string> Options { get; }
+
+        public int Value
+        {
+            get { return Clamp(_getter()); }
+            set { _setter(Clamp(value)); }
+        }
+
+        private int Clamp(int index)
+        {
+            return Math.Max(0, Math.Min(Options.Count - 1, index));
         }
     }
 }
