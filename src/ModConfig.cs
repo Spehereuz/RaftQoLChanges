@@ -1,5 +1,6 @@
 using System;
 using QoLChanges.Core;
+using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.StackSize;
@@ -22,6 +23,8 @@ namespace QoLChanges
 
         public HoverInfoConfig hoverInfo = new HoverInfoConfig();
 
+        public AutoReplaceConfig autoReplace = new AutoReplaceConfig();
+
         public MenuConfig menu = new MenuConfig();
 
         public void Normalize()
@@ -41,6 +44,11 @@ namespace QoLChanges
                 hoverInfo = new HoverInfoConfig();
             }
 
+            if (autoReplace == null)
+            {
+                autoReplace = new AutoReplaceConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -49,6 +57,7 @@ namespace QoLChanges
             stackSize.Normalize();
             durabilityIndicator.Normalize();
             hoverInfo.Normalize();
+            autoReplace.Normalize();
             menu.Normalize();
         }
     }

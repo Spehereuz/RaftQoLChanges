@@ -1,0 +1,43 @@
+using System.Collections.Generic;
+using QoLChanges.Core;
+
+namespace QoLChanges.Features.AutoReplace
+{
+    /// <summary>
+    /// When the item in the selected hotbar slot is used up (a tool breaks), moves the same item from the main
+    /// inventory into the slot and selects it. Client-side: only the local player's inventory changes, the same way
+    /// as moving the item by hand; dropping, moving or storing items never triggers it.
+    /// </summary>
+    internal sealed class AutoReplaceFeature : Feature
+    {
+        public const string FeatureId = "AutoReplace";
+
+        private readonly AutoReplaceConfig _config;
+
+        public AutoReplaceFeature(AutoReplaceConfig config)
+            : base(FeatureId, "Auto-replace tool", config)
+        {
+            _config = config;
+        }
+
+        public override IEnumerable<FeatureSetting> GetSettings()
+        {
+            yield return new ToggleSetting("Tools and weapons", () => _config.tools, value => _config.tools = value);
+        }
+
+        protected override void OnEnable()
+        {
+            AutoReplaceService.Activate(_config);
+
+            if (_config.tools)
+            {
+                Patch(typeof(ToolBreakPatch));
+            }
+        }
+
+        protected override void OnDisable()
+        {
+            AutoReplaceService.Deactivate();
+        }
+    }
+}
