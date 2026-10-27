@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
 using QoLChanges.Core;
 using UnityEngine;
 
 namespace QoLChanges.UI
 {
-    /// <summary>One toggle per feature followed by its options. Changes apply and save immediately.</summary>
+    /// <summary>
+    /// One header per feature (expand arrow, name, toggle) followed by its options when expanded.
+    /// Changes, including the expanded state, apply and save immediately.
+    /// </summary>
     internal static class QoLSettingsPage
     {
         public const string Title = "QoL Changes";
@@ -20,7 +24,11 @@ namespace QoLChanges.UI
             foreach (Feature feature in runtime.Features.Features)
             {
                 Feature current = feature;
-                RaftUiRows.CreateToggleRow(
+                List<FeatureSetting> settings = new List<FeatureSetting>(current.GetSettings());
+                bool expandable = settings.Count > 0;
+                bool expanded = expandable && runtime.IsFeatureExpanded(current);
+
+                RaftUiRows.CreateFeatureHeaderRow(
                     templates,
                     content,
                     current.DisplayName,
@@ -30,10 +38,23 @@ namespace QoLChanges.UI
                     {
                         runtime.SetFeatureEnabled(current, value);
                         refresh();
+                    },
+                    expandable,
+                    expanded,
+                    () =>
+                    {
+                        runtime.SetFeatureExpanded(current, !expanded);
+                        refresh();
                     });
 
+                if (!expanded)
+                {
+                    continue;
+                }
+
+                // Options of a disabled feature stay visible but cannot be changed.
                 bool optionsInteractable = modEnabled && current.Config.enabled;
-                foreach (FeatureSetting setting in current.GetSettings())
+                foreach (FeatureSetting setting in settings)
                 {
                     AddSetting(templates, content, runtime, current, setting, optionsInteractable);
                 }

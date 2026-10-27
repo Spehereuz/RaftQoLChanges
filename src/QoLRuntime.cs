@@ -71,6 +71,31 @@ namespace QoLChanges
             Save();
         }
 
+        public bool IsFeatureExpanded(Feature feature)
+        {
+            return Config.menu.expandedFeatures.Contains(feature.Id);
+        }
+
+        /// <summary>Remembers whether the feature's options are shown on the settings page.</summary>
+        public void SetFeatureExpanded(Feature feature, bool expanded)
+        {
+            if (IsFeatureExpanded(feature) == expanded)
+            {
+                return;
+            }
+
+            if (expanded)
+            {
+                Config.menu.expandedFeatures.Add(feature.Id);
+            }
+            else
+            {
+                Config.menu.expandedFeatures.Remove(feature.Id);
+            }
+
+            Save();
+        }
+
         /// <summary>Call after a feature option has been changed.</summary>
         public void ApplyFeatureSettings(Feature feature)
         {

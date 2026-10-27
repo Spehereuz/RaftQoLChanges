@@ -2,10 +2,11 @@ using System;
 using QoLChanges.Core;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.StackSize;
+using QoLChanges.UI;
 
 namespace QoLChanges
 {
-    /// <summary>Root of mods\ModData\qol-changes\config.json. One section per feature.</summary>
+    /// <summary>Root of mods\ModData\qol-changes\config.json. One section per feature, plus the menu state.</summary>
     [Serializable]
     public sealed class ModConfig : IConfig
     {
@@ -17,6 +18,8 @@ namespace QoLChanges
         public StackSizeConfig stackSize = new StackSizeConfig();
 
         public DurabilityIndicatorConfig durabilityIndicator = new DurabilityIndicatorConfig();
+
+        public MenuConfig menu = new MenuConfig();
 
         public void Normalize()
         {
@@ -30,8 +33,14 @@ namespace QoLChanges
                 durabilityIndicator = new DurabilityIndicatorConfig();
             }
 
+            if (menu == null)
+            {
+                menu = new MenuConfig();
+            }
+
             stackSize.Normalize();
             durabilityIndicator.Normalize();
+            menu.Normalize();
         }
     }
 }

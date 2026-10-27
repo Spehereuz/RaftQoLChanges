@@ -17,7 +17,12 @@ namespace QoLChanges.UI
     /// <summary>Settings-style rows built from the native "Quick build", "Master volume" and "Language" rows.</summary>
     internal static class RaftUiRows
     {
-        private const float IndentWidth = 40f;
+        // Header labels leave room for the expand arrow, options are indented below the header name.
+        private const float ArrowSpace = 30f;
+        private const float IndentWidth = 60f;
+
+        // Right part of a header row that belongs to its toggle; the rest of the row expands/collapses.
+        private const float ToggleSpace = 80f;
 
         public static Text CreateLabelRow(RaftUiTemplates templates, Transform parent, string label)
         {
@@ -50,6 +55,55 @@ namespace QoLChanges.UI
             toggle.onValueChanged.AddListener(value => onChanged(value));
             ApplyInteractableTint(text, interactable);
             DimWhenDisabled(toggle.gameObject, interactable);
+            return toggle;
+        }
+
+        /// <summary>
+        /// Feature row: expand arrow, name and enable toggle. Clicking the arrow or the name calls
+        /// <paramref name="onExpandClicked"/>; features without options get no arrow but keep the alignment.
+        /// </summary>
+        public static Toggle CreateFeatureHeaderRow(
+            RaftUiTemplates templates,
+            Transform parent,
+            string label,
+            bool isOn,
+            bool interactable,
+            Action<bool> onChanged,
+            bool expandable,
+            bool expanded,
+            Action onExpandClicked)
+        {
+            Toggle toggle = CreateToggleRow(templates, parent, label, isOn, interactable, onChanged, RowStyle.Header);
+            Transform row = toggle.transform.parent;
+            Text text = RaftUi.FindText(row.gameObject, "Text");
+
+            RectTransform textRect = text.rectTransform;
+            float textLeft = textRect.anchoredPosition.x - textRect.sizeDelta.x * textRect.pivot.x;
+            Shift(text, ArrowSpace);
+            if (!expandable)
+            {
+                return toggle;
+            }
+
+            text.raycastTarget = false;
+            Button area = CreateClickArea(row, onExpandClicked);
+
+            GameObject arrow = RaftUi.Clone(templates.DropdownArrow, "ExpandArrow");
+            RectTransform arrowRect = (RectTransform)arrow.transform;
+            arrowRect.anchorMin = new Vector2(0f, 0.5f);
+            arrowRect.anchorMax = new Vector2(0f, 0.5f);
+            arrowRect.pivot = new Vector2(0.5f, 0.5f);
+            arrowRect.anchoredPosition = new Vector2(textLeft + ArrowSpace * 0.5f, 0f);
+
+            // The dropdown arrow points down (expanded); turned a quarter counter-clockwise it points right.
+            arrowRect.localRotation = expanded ? Quaternion.identity : Quaternion.Euler(0f, 0f, 90f);
+
+            Image arrowImage = arrow.GetComponent<Image>();
+            arrowImage.raycastTarget = false;
+            area.targetGraphic = arrowImage;
+
+            RaftUi.Place(arrow, row);
+            arrow.transform.SetSiblingIndex(area.transform.GetSiblingIndex() + 1);
             return toggle;
         }
 
@@ -219,9 +273,40 @@ namespace QoLChanges.UI
 
         private static void Indent(Text text)
         {
+            Shift(text, IndentWidth);
+        }
+
+        /// <summary>Moves the left edge of a left-anchored label, keeping its right edge.</summary>
+        private static void Shift(Text text, float width)
+        {
             RectTransform rect = text.rectTransform;
-            rect.anchoredPosition += new Vector2(IndentWidth, 0f);
-            rect.sizeDelta -= new Vector2(IndentWidth, 0f);
+            rect.anchoredPosition += new Vector2(width * (1f - rect.pivot.x), 0f);
+            rect.sizeDelta -= new Vector2(width, 0f);
+        }
+
+        /// <summary>Transparent button over the row, except the toggle at its right end.</summary>
+        private static Button CreateClickArea(Transform row, Action onClick)
+        {
+            GameObject areaObject = new GameObject("ExpandArea", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            areaObject.layer = row.gameObject.layer;
+
+            RectTransform rect = (RectTransform)areaObject.transform;
+            rect.SetParent(row, false);
+            rect.SetAsFirstSibling();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = new Vector2(-ToggleSpace, 0f);
+
+            // Fully transparent images still receive raycasts.
+            areaObject.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0f);
+
+            Button button = areaObject.GetComponent<Button>();
+            button.transition = Selectable.Transition.ColorTint;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            button.onClick.AddListener(() => onClick());
+            return button;
         }
 
         /// <summary>

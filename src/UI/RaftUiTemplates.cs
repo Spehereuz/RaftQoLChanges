@@ -50,6 +50,9 @@ namespace QoLChanges.UI
         /// <summary>"Language" row: label + dropdown.</summary>
         public GameObject DropdownRow { get; private set; }
 
+        /// <summary>Arrow of the "Language" dropdown (points down).</summary>
+        public GameObject DropdownArrow { get; private set; }
+
         public static bool TryFind(PauseMenu pauseMenu, out RaftUiTemplates templates, out string error)
         {
             templates = null;
@@ -99,6 +102,13 @@ namespace QoLChanges.UI
                 return false;
             }
 
+            Transform arrow = language.transform.Find("Arrow");
+            if (arrow == null || arrow.GetComponent<Image>() == null)
+            {
+                error = "language dropdown arrow not found";
+                return false;
+            }
+
             templates = new RaftUiTemplates
             {
                 PauseButton = settingsMagnet.gameObject,
@@ -108,6 +118,7 @@ namespace QoLChanges.UI
                 ToggleRow = quickBuild.transform.parent.gameObject,
                 SliderRow = slider.gameObject,
                 DropdownRow = language.transform.parent.gameObject,
+                DropdownArrow = arrow.gameObject,
             };
             return true;
         }
