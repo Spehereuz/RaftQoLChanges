@@ -20,7 +20,7 @@ self-contained and can be switched on or off independently.
 |---|---|---|---|
 | Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item by 1–5 (at 5: 20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
 | Durability indicator | `durabilityIndicator` | on, `Percent` for every group | Writes the durability of items that have a durability bar on their slot, and the charge of batteries: `73%`, `88` or `88/120`, coloured like the bar. |
-| Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers. |
+| Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers, cooking and smelting. |
 
 ### Durability indicator
 
@@ -49,20 +49,28 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
 
 | Target | Shows |
 |---|---|
-| Battery slot of any machine (purifier, grill, smelter, juicer, receiver, sprinkler, recycler, battery charger) | `Battery 68%`, coloured like the slot lights. Format: Off, Percent, Remaining or Remaining / max. Nothing when the slot is empty. |
+| Battery slot of any machine (purifier, grill, smelter, juicer, receiver, sprinkler, recycler, battery charger) | `Battery 68%`, coloured like its charge bar in the inventory. Format: Off, Percent, Remaining or Remaining / max. Nothing when the slot is empty. |
 | Plant or tree | `Growing 63%`, `Ready to harvest` or `Needs water` |
 | Soil of a crop plot | `2 growing (41%) · 1 ready · 1 needs water`; the percentage is the plant closest to being ready. A plot with a single plant reads like the plant. |
 | Simple or advanced water purifier | `Salt water · purifying 45%` or `Fresh water ready`; with several portions `3 purifying (45%) · 2 fresh` |
 | Electric water purifier | `Fresh water 12/20 · Pumping`, `Full` or `No power` |
+| Grill (simple, advanced, electric) | `Raw salmon · cooking 45%` or `Cooked salmon ready`; with several items `2 cooking (45%) · 1 ready`. Aiming at one of the items shows only that item. |
+| Smelter, electric smelter, paint mill | the same with `smelting` / `grinding`: `Metal ore · smelting 45%` |
+| Cooking pot, juicer | `Fish stew · cooking 45%` / `Smoothie · blending 45%`, then `Fish stew · 3 portions` |
 
 - A plant grows only after it has been watered once and then grows until it is harvested. The game asks
   for water only while you hold an item; `Needs water` is shown with empty hands as well.
 - Plants are found the same way as the game's harvest prompt, so a plant reads the same wherever it is
   aimed at; the soil around plants shows the summary of the plot.
-- Each target group can be switched off separately. The battery slot is described on its own, aiming at the
+- Grills, smelters and pots add `· no fuel` / `· no power` while something waits because the fire is out or
+  the battery is off or empty. Ingredients in a pot that has not started cooking show nothing.
+- Each target group can be switched off separately: Batteries, Plants, Water purifiers, Cooking (grills,
+  cooking pot, juicer), Smelters and paint mill. The battery slot is described on its own, aiming at the
   rest of a machine does not show its battery.
 - Client-side and read-only. Plant timers run on every player's game and the host announces when a plant is
-  ready, so another player may see a slightly different percentage than the host until then.
+  ready. Cooking and purifying timers run only on the host; other players' games advance their own copy with
+  the same rules. Either way another player may see a slightly different percentage than the host until the
+  host announces that it is done.
 
 ### In-game menu
 
@@ -103,6 +111,8 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "battery": "Percent",
     "plants": true,
     "purifiers": true,
+    "cooking": true,
+    "smelters": true,
     "enabled": true
   },
   "menu": {

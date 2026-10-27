@@ -129,12 +129,14 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 
 Hover info check: build a simple and an advanced purifier, an electric purifier and a few crop plots. Give
 batteries (`qoldev.give Battery`, `qoldev.give Battery_Advanced`), set their charge with `qoldev.dur 37%`
-while selected and put them into machines; the text and its colour must match the slot lights, also after
-switching the battery format; in the inventory and storages the same batteries show their charge as durability
-text. Plant seeds and water only some of them; aim at each plant (also its centre) with empty hands and with
-an item, and at the soil around them for the summary of the plot. Pour salt water into the advanced purifier
-several times with fuel burning to see mixed portions. For multiplayer, a second player only needs to compare
-the numbers; nothing is sent over the network.
+while selected and put them into machines; the text and its colour must match the inventory text of the same
+battery, also after switching the battery format; in the inventory and storages the same batteries show their
+charge as durability text. Plant seeds and water only some of them; aim at each plant (also its centre) with
+empty hands and with an item, and at the soil around them for the summary of the plot. Pour salt water into
+the advanced purifier several times with fuel burning to see mixed portions. Cook on every grill, both
+smelters, the paint mill, the pot and the juicer; aim at single items on multi-item grills, let the fire go
+out and remove the battery to see `no fuel` / `no power`. For multiplayer, a second player compares the
+cooking and purifying percentages with the host; nothing is sent over the network.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -223,11 +225,23 @@ _CanvasGame_New
   `Cropplot.Update` grows plants of slots that `CanGrow` (planted and watered).
 - Cooking stands and fuel purifiers: `Block_CookingStand.cookingSlots`; a slot cooks while busy,
   `cookTimer` up to `CookingTime x cookTimeMultiplier`, then `IsComplete`. `FakeSlot` slots are occupied by an
-  item of another slot. Simple purifier: 1 slot, advanced: 5.
+  item of another slot. Simple purifier: 1 slot, advanced: 5. Grills: simple 1, advanced 3, electric 6;
+  smelter 1, electric smelter 3, paint mill 5. Kind of stand by `buildableItem.UniqueName`
+  (`Placeable_CookingStand_Food_*`, `*_Smelter*`, `*_PaintMill`, `*_Purifier_*`).
+- Only the host advances cooking timers: `Block_CookingStand.Update` calls `UpdateSlot()` while
+  `IsUsingEnergySource()` (fuel burning / battery `On`), `CookingTable.Update` adds to `cookTimer` while
+  `IsCooking()` (recipe without portions; pot: fuel burning, juicer: battery has charge). Other players get
+  the timers on join and the completion from the host. Hover info advances its own copies on those players
+  (`CookingTimers`, postfixes on both `Update` methods) and never writes to the game objects.
+- Slot colliders (item layer) are enabled only when the item is done (`CookingSlot.OnComplete`), for
+  collecting; the raw and cooked models of a slot are `CookItemConnection.rawItem` / `cookedItem`.
+- Cooking pot and juicer: `CookingTable.CurrentRecipe` (`SO_CookingTable_Recipe`: `Result`, `CookTime`,
+  `Portions`), `CookTimer`, `Portions` left after cooking.
 - Electric purifier pumps while `battery.CanGiveElectricity`, battery uses >= `batteryDrainPerPump` and the
   tank is not full (`Tank.CurrentTankAmount`, `maxCapacity`).
-- Battery slots: `Battery.batteryInstance` (uses / `BaseItemMaxUses`), slot lights from `greenLimit`,
-  `yellowLimit`, `orangeLimit` and emissive `green` / `yellow` / `orange` / `red`.
+- Battery slots: `Battery.batteryInstance` (uses / `BaseItemMaxUses`). The slot lights switch colour at
+  `greenLimit`, `yellowLimit`, `orangeLimit` and turn yellow early; hover info uses the item's `BarGradient`
+  instead, like the durability text in the inventory.
 
 ## Useful game facts
 
