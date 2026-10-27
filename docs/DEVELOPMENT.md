@@ -40,6 +40,12 @@ Technical notes for working on QoL Changes. Setup, build and release steps are i
 - **Mono and `UnityEngine.Object` null checks:** use `== null` / `!= null`, not `??` or `?.`.
 - **UI callbacks:** never destroy the element that raised a callback inside it; request a rebuild
   and perform it in `LateUpdate` (see `UI/ModMenu`).
+- **`Resources.FindObjectsOfTypeAll` also returns prefab assets.** Filter by
+  `gameObject.scene.IsValid()` before adding or removing children, otherwise prefabs get modified.
+- **Patches on hot game paths** (`Slot.RefreshComponents` runs after every inventory change) must not
+  throw: catch, log once and keep the game running (see `DurabilityLabels.Refresh`).
+- **Text added to game UI** that is removed and recreated in the same frame (feature reapply) must be
+  destroyed with `DestroyImmediate`, otherwise lookups by name still find the old object.
 - **Visual Studio** keeps its own copy of open files. If files are changed outside the editor,
   accept the reload prompt, otherwise the next build saves the stale copy over them.
 
@@ -52,7 +58,8 @@ ModConfig          root of config.json: master "enabled" + one section per featu
 Core/
   Feature          base class: id, display name, config, own Harmony instance, Enable/Disable/Reapply
   FeatureConfig    base config section ("enabled"); override Normalize() to clamp values
-  FeatureSetting   declarative options (IntSliderSetting) the settings page is generated from
+  FeatureSetting   declarative options the settings page is generated from:
+                   IntSliderSetting (slider), ToggleSetting (toggle), ChoiceSetting (dropdown, value = index)
   FeatureManager   registry, applies config, honours the master switch
   JsonConfigFile   load/merge/normalize/save with Newtonsoft.Json, atomic write
   ModLog           "[QoL Changes] " prefixed Unity log
@@ -87,7 +94,9 @@ restored on the next load.
 
 Templates are cloned at runtime from the game scene (`UI/RaftUiTemplates`), so no game assets are
 distributed. Game scripts are stripped from clones (`UI/RaftUi.Clone`), keeping `ButtonSound`,
-`TextChangeButton` and `UiMagnet`.
+`TextChangeButton` and `UiMagnet`; serialized `Button`, `Toggle`, `Slider` and `Dropdown` listeners
+are dropped. Row templates: "Quick build" (toggle), "MasterVolume" (slider), "Language" (dropdown,
+`GeneralSettingsBox.dropdown_language`; its `Localize` and `SetLanguageDropdown` are stripped).
 
 ```
 _CanvasPausMenu (PauseMenu)
@@ -106,11 +115,32 @@ _SCP_3_Settings/_CanvasOptionMenu (Settings.optionsCanvas)
   the end of every `Update`.
 - `CanvasHelper.ActiveMenu == MenuType.PauseMenu` while the pause menu is open.
 
+### Item slots
+
+```
+_CanvasGame_New/InventoryParent
+  Hotbar/Hotslot parent             10 x Slot          (GridLayoutGroup, cell 70x70)
+  Inventory_Player/SlotParent       30 x Slot          (cell 70x70)
+    Equipslot parent                 5 x Slot_Equip    (cell 70x70)
+  Inventory_ResearchTable/...                          (cell 60x60)
+Slot_Hotbar / Slot_Inventory_*: ItemImage, AmountText, Slider{Background, Fill Area/Fill}
+```
+
+- `AmountText` (`Slot.textComponent`): top-left corner, 74.1x31.5 at (39.9, -17.5), font 24,
+  UpperLeft. Shown only when `Amount > 1`. In equipment slots it is a copy scaled by ~0.137 with
+  font 200, so do not copy its geometry.
+- Durability bar (`Slot.sliderComponent`): shown when `Item_Base.MaxUses > 1`, value
+  `ItemInstance.NormalizedUses`, fill colour `Item_Base.BarGradient.Evaluate(value)`. Tools use a
+  red → yellow → green gradient, water containers flat cyan, food flat yellow.
+- Storage slots are not part of the scene, they are created at runtime; patching
+  `Slot.RefreshComponents` covers them without looking for their prefab.
+
 ## Useful game facts
 
 | Area | Types and members |
 |---|---|
 | Items | `ItemManager.GetAllItems()`, `Item_Base.settings_Inventory`, `ItemInstance`, `Slot.RefreshComponents()` |
+| Durability | `Item_Base.MaxUses`, `Item_Base.BarGradient`, `ItemInstance.Uses` / `NormalizedUses`, `Slot.IncrementUses()`; `settings_consumeable.FoodForm` (`Fluid` = drink, `Solid` = food) |
 | Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` |
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
 | Crafting | `CraftingMenu`, `CostCollection` |

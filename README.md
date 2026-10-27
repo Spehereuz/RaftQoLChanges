@@ -19,6 +19,26 @@ self-contained and can be switched on or off independently.
 | Feature | Config section | Default | Description |
 |---|---|---|---|
 | Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item by 1–5 (at 5: 20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
+| Durability indicator | `durabilityIndicator` | on, `Percent` for every group | Writes the durability of items that have a durability bar on their slot: `73%`, `88` or `88/120`, coloured like the bar. |
+
+### Durability indicator
+
+The text appears in the top-left corner of the slot, where the amount of a stack is shown, in the
+hotbar, inventory, equipment slots and storages. Items are split into three groups, each with its
+own mode (Off, Percent, Remaining, Remaining / max):
+
+| Group | Items | Unit |
+|---|---|---|
+| Tools and equipment | axes, hooks, weapons, fishing rods, armor, flippers, head lights, oxygen bottle and other tools | uses |
+| Water containers | canteens and bottles, fresh or salt water | sips |
+| Food portions | cooked catfish, cooked salmon, watermelon | portions |
+
+- Items from other mods are grouped by their properties: drinkable → water, edible → food, anything
+  else → tools.
+- Batteries are not shown: their charge is planned for the hover tooltip of placed batteries.
+- A stack of more than one item keeps showing its amount; the indicator appears when one item is left.
+- Items that have not been used yet show nothing unless **Show at full durability** is on.
+- Percent is rounded down, so a used item never shows `100%` and a nearly broken one shows at least `1%`.
 
 ### In-game menu
 
@@ -33,24 +53,34 @@ Stacks larger than the vanilla limit are saved as they are and are not clamped b
 After disabling Stack size they stay intact: you can take items out of them, but cannot add more until
 they drop below the vanilla limit.
 
+Durability indicator only adds text to the inventory UI and leaves nothing behind when disabled.
+
 ## Configuration
 
 Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on first start:
 
 ```json
 {
-    "enabled": true,
-    "stackSize": {
-        "enabled": true,
-        "multiplier": 5
-    }
+  "enabled": true,
+  "stackSize": {
+    "multiplier": 5,
+    "enabled": true
+  },
+  "durabilityIndicator": {
+    "tools": "Percent",
+    "water": "Percent",
+    "food": "Percent",
+    "showAtFullDurability": false,
+    "enabled": true
+  }
 }
 ```
 
 The top-level `enabled` switches the whole mod off while keeping each feature's own settings.
 The in-game menu is the intended way to change settings; when editing the file by hand, do it while
-the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5. An
-invalid file is left untouched and defaults are used until it is fixed.
+the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
+Durability modes are `Off`, `Percent`, `Remaining` and `RemainingOfMax`. An invalid file is left
+untouched and defaults are used until it is fixed.
 
 ## Installation
 
