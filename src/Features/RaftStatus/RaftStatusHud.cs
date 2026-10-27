@@ -23,6 +23,10 @@ namespace QoLChanges.Features.RaftStatus
         private float _nextRefresh;
         private bool _errorLogged;
 
+        // Line whose arrow follows the camera every frame, -1 when there is none.
+        private int _thrustLine = -1;
+        private Vector3 _thrust;
+
         public static void Activate(RaftStatusConfig config)
         {
             Deactivate();
@@ -56,19 +60,20 @@ namespace QoLChanges.Features.RaftStatus
 
         private void Update()
         {
-            if (Time.unscaledTime < _nextRefresh)
-            {
-                return;
-            }
-
-            _nextRefresh = Time.unscaledTime + RefreshInterval;
             try
             {
-                Refresh();
+                if (Time.unscaledTime >= _nextRefresh)
+                {
+                    _nextRefresh = Time.unscaledTime + RefreshInterval;
+                    Refresh();
+                }
+
+                UpdateThrustArrow();
             }
             catch (Exception e)
             {
                 _section.Visible = false;
+                _thrustLine = -1;
                 if (!_errorLogged)
                 {
                     _errorLogged = true;
@@ -87,17 +92,61 @@ namespace QoLChanges.Features.RaftStatus
             }
 
             int count = 0;
-            if (_config.anchor)
+            _thrustLine = -1;
+
+            // Engines need the anchors as well: an anchor that holds the raft stops them.
+            AnchorSummary anchors = _config.anchor || _config.engines ? _anchors.Read() : default(AnchorSummary);
+            if (_config.anchor && anchors.Total > 0)
             {
-                AnchorSummary anchors = _anchors.Read();
-                if (anchors.Total > 0)
+                SetLine(count++, RaftStatusIcons.Anchor, RaftStatusText.Anchor(anchors));
+            }
+
+            if (_config.engines)
+            {
+                EngineSummary engines = RaftEngines.Read();
+                if (engines.Total > 0)
                 {
-                    SetLine(count++, RaftStatusIcons.Anchor, RaftStatusText.Anchor(anchors));
+                    EngineDrive drive = RaftEngines.GetDrive(engines, anchors.HoldsRaft);
+                    if (drive == EngineDrive.Pushing && _config.thrustDirection)
+                    {
+                        _thrustLine = count;
+                        _thrust = engines.Thrust;
+                    }
+
+                    SetLine(count++, RaftStatusIcons.Engine, RaftStatusText.Engines(engines, drive));
                 }
             }
 
             _section.TrimLines(count);
             _section.Visible = count > 0;
+        }
+
+        /// <summary>The arrow shows where the engines push the raft as seen from the camera, so it turns every frame.</summary>
+        private void UpdateThrustArrow()
+        {
+            if (_thrustLine < 0 || _thrustLine >= _section.Lines.Count)
+            {
+                return;
+            }
+
+            Network_Player player = ComponentManager<Network_Player>.Value;
+            Transform view = player != null && player.CameraTransform != null ? player.CameraTransform : null;
+            if (view == null)
+            {
+                _section.Lines[_thrustLine].ArrowAngle = null;
+                return;
+            }
+
+            Vector3 forward = view.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f)
+            {
+                // Looking straight up or down: the top of the screen points where the camera is turned.
+                forward = view.up;
+                forward.y = 0f;
+            }
+
+            _section.Lines[_thrustLine].ArrowAngle = Vector3.SignedAngle(forward, _thrust, Vector3.up);
         }
 
         private void SetLine(int index, string iconItem, string text)

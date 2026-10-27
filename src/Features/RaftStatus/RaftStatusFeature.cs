@@ -4,8 +4,8 @@ using QoLChanges.Core;
 namespace QoLChanges.Features.RaftStatus
 {
     /// <summary>
-    /// Lines above the stat bars with the state of the raft while the player is on it: anchors. Client-side and
-    /// read-only: every value is one the game shows on the anchors themselves.
+    /// Lines above the stat bars with the state of the raft while the player is on it: anchors and engines.
+    /// Client-side and read-only: every value is one the game shows on the anchors and engines themselves.
     /// </summary>
     internal sealed class RaftStatusFeature : Feature
     {
@@ -22,6 +22,8 @@ namespace QoLChanges.Features.RaftStatus
         public override IEnumerable<FeatureSetting> GetSettings()
         {
             yield return new ToggleSetting("Anchor", () => _config.anchor, value => _config.anchor = value);
+            yield return new ToggleSetting("Engines", () => _config.engines, value => _config.engines = value);
+            yield return new ToggleSetting("Thrust direction", () => _config.thrustDirection, value => _config.thrustDirection = value);
             yield return new IntSliderSetting(
                 "HUD size",
                 RaftStatusConfig.MinScale / RaftStatusConfig.ScaleStep,

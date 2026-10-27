@@ -14,6 +14,12 @@ namespace QoLChanges.Features.RaftStatus
         /// <summary>State of the raft's anchors: anchored, dropping, raising or free.</summary>
         public bool anchor = true;
 
+        /// <summary>Running engines, engines without fuel and whether the anchor holds the raft.</summary>
+        public bool engines = true;
+
+        /// <summary>Arrow of the direction the running engines push the raft, relative to the camera.</summary>
+        public bool thrustDirection = true;
+
         /// <summary>Size of the HUD lines in percent: 75, 100, 125 or 150.</summary>
         public int scale = 100;
 

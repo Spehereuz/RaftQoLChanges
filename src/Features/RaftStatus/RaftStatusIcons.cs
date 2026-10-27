@@ -7,6 +7,7 @@ namespace QoLChanges.Features.RaftStatus
     internal static class RaftStatusIcons
     {
         public const string Anchor = "Placeable_Anchor_Stationary";
+        public const string Engine = "Placeable_MotorWheel";
 
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
