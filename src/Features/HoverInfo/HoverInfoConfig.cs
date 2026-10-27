@@ -30,6 +30,9 @@ namespace QoLChanges.Features.HoverInfo
         /// <summary>Items in collection nets out of how many they hold.</summary>
         public bool collectionNets = true;
 
+        /// <summary>Parts left of a scarecrow and whether a seagull sits on it.</summary>
+        public bool scarecrows = true;
+
         public override void Normalize()
         {
             if (!Enum.IsDefined(typeof(BatteryDisplayMode), battery))

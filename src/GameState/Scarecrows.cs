@@ -17,9 +17,21 @@ namespace QoLChanges.GameState
 
         private const float SeagullSearchInterval = 5f;
         private const float SearchInterval = 1f;
+        private const float SeagullsInterval = 0.5f;
+        private const string LandingTag = "BirdLanding";
+
+        // A sitting seagull is at the landing point of the scarecrow.
+        private const float SittingDistance = 1f;
 
         private static readonly AccessTools.FieldRef<Seagull, float> RadiusField =
             AccessTools.FieldRefAccess<Seagull, float>("searchScarecrowRadius");
+
+        private static readonly AccessTools.FieldRef<Scarecrow, List<Rigidbody>> PartsField =
+            AccessTools.FieldRefAccess<Scarecrow, List<Rigidbody>>("parts");
+
+        private static readonly Dictionary<Item_Base, int> MaxPartsByItem = new Dictionary<Item_Base, int>();
+        private static Seagull[] _seagulls = new Seagull[0];
+        private static float _nextSeagulls;
 
         private static readonly Dictionary<Scarecrow, ScarecrowZone> Zones = new Dictionary<Scarecrow, ScarecrowZone>();
         private static readonly List<Scarecrow> PlacedScarecrows = new List<Scarecrow>();
@@ -84,6 +96,65 @@ namespace QoLChanges.GameState
             return zone;
         }
 
+        /// <summary>Parts a basic scarecrow has left; a seagull removes one per attack and the last one destroys it.</summary>
+        public static int Parts(Scarecrow scarecrow)
+        {
+            List<Rigidbody> parts = PartsField(scarecrow);
+            return parts != null ? parts.Count : 0;
+        }
+
+        /// <summary>Parts the scarecrow was built with, read from the prefab of its item.</summary>
+        public static int MaxParts(Scarecrow scarecrow)
+        {
+            Block block = scarecrow.GetComponent<Block>();
+            Item_Base item = block != null ? block.buildableItem : null;
+            if (item == null)
+            {
+                return Parts(scarecrow);
+            }
+
+            if (!MaxPartsByItem.TryGetValue(item, out int max))
+            {
+                Block prefab = item.settings_buildable != null ? item.settings_buildable.GetBlockPrefab(0) : null;
+                Scarecrow prefabScarecrow = prefab != null ? prefab.GetComponent<Scarecrow>() : null;
+                max = prefabScarecrow != null ? Parts(prefabScarecrow) : 0;
+                MaxPartsByItem[item] = max;
+            }
+
+            return Mathf.Max(max, Parts(scarecrow));
+        }
+
+        /// <summary>
+        /// Whether a seagull sits on the scarecrow and pecks it. While one is on its way to a scarecrow or sits on it, the
+        /// host's seagulls attack no crops at all. The state of seagulls is sent to every player; which scarecrow a seagull
+        /// is after is known only on the host, so the others go by where it sits.
+        /// </summary>
+        public static bool HasSeagull(Scarecrow scarecrow)
+        {
+            if (Time.unscaledTime >= _nextSeagulls)
+            {
+                _nextSeagulls = Time.unscaledTime + SeagullsInterval;
+                _seagulls = UnityEngine.Object.FindObjectsOfType<Seagull>();
+            }
+
+            Vector3 landing = LandingPoint(scarecrow);
+            foreach (Seagull seagull in _seagulls)
+            {
+                if (seagull == null || seagull.currentState != SeagullState.Peck)
+                {
+                    continue;
+                }
+
+                if (seagull.targetScarecrow == scarecrow
+                    || (seagull.transform.position - landing).sqrMagnitude <= SittingDistance * SittingDistance)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>The point the seagulls search for scarecrows around: the centre of the crop plot's main collider.</summary>
         public static Vector3 CropplotCentre(Cropplot cropplot)
         {
@@ -94,12 +165,29 @@ namespace QoLChanges.GameState
         public static void Clear()
         {
             PlacedScarecrows.Clear();
+            _seagulls = new Seagull[0];
+            _nextSeagulls = 0f;
             Zones.Clear();
             _radius = DefaultRadius;
             _radiusRead = false;
             _nextSeagullSearch = 0f;
             _nextSearch = 0f;
             _placedBlockCount = -1;
+        }
+
+        private static Vector3 LandingPoint(Scarecrow scarecrow)
+        {
+            Transform root = scarecrow.transform;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.CompareTag(LandingTag))
+                {
+                    return child.position;
+                }
+            }
+
+            return root.position;
         }
 
         private static void Search()

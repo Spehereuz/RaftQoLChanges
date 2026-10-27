@@ -5,9 +5,9 @@ namespace QoLChanges.Features.HoverInfo
 {
     /// <summary>
     /// Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water
-    /// purifiers, cooking, smelting, engine fuel, collection nets. Client-side and read-only: every value is one the game
+    /// purifiers, cooking, smelting, engine fuel, collection nets, scarecrows. Client-side and read-only: every value is one the game
     /// already shows in a less precise way (battery slot lights, plant size, water levels, cooking models, fuel gauges,
-    /// items in nets), nothing is changed or sent over the network.
+    /// items in nets, missing parts of scarecrows), nothing is changed or sent over the network.
     /// </summary>
     internal sealed class HoverInfoFeature : Feature
     {
@@ -37,6 +37,7 @@ namespace QoLChanges.Features.HoverInfo
             yield return new ToggleSetting("Cooking", () => _config.cooking, value => _config.cooking = value);
             yield return new ToggleSetting("Smelters and paint mill", () => _config.smelters, value => _config.smelters = value);
             yield return new ToggleSetting("Collection nets", () => _config.collectionNets, value => _config.collectionNets = value);
+            yield return new ToggleSetting("Scarecrows", () => _config.scarecrows, value => _config.scarecrows = value);
         }
 
         protected override void OnEnable()
@@ -46,6 +47,12 @@ namespace QoLChanges.Features.HoverInfo
             if (_config.battery != BatteryDisplayMode.Off)
             {
                 providers.Add(new BatteryHoverInfo(() => _config.battery));
+            }
+
+            // Found with a raycast of its own; it goes before the providers of what may be behind it (crop plots).
+            if (_config.scarecrows)
+            {
+                providers.Add(new ScarecrowHoverInfo());
             }
 
             if (_config.plants)
