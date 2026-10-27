@@ -35,6 +35,7 @@ namespace QoLChanges.Features.ScarecrowRadius
         protected override void OnEnable()
         {
             ScarecrowRings.Activate(_config);
+            Patch(typeof(OccupyingComponentSetMaterialPatch));
         }
 
         protected override void OnDisable()

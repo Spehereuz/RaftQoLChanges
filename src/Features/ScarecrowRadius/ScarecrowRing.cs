@@ -18,6 +18,7 @@ namespace QoLChanges.Features.ScarecrowRadius
         private readonly GameObject _root;
         private readonly LineRenderer _line;
         private readonly List<Vector3> _points = new List<Vector3>();
+        private ScarecrowZone _builtZone;
         private float _builtRadius = -1f;
 
         public ScarecrowRing(Transform parent, Material material, float width)
@@ -44,8 +45,10 @@ namespace QoLChanges.Features.ScarecrowRadius
         {
             Used = true;
             _root.transform.SetPositionAndRotation(target.position, target.rotation);
-            if (!Mathf.Approximately(_builtRadius, radius))
+            // The ring of the preview is used for basic and advanced scarecrows alike.
+            if (zone != _builtZone || !Mathf.Approximately(_builtRadius, radius))
             {
+                _builtZone = zone;
                 _builtRadius = radius;
                 Build(zone, radius);
             }
