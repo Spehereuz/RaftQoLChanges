@@ -17,6 +17,9 @@ namespace QoLChanges.Features.ScarecrowRadius
         private const string HostName = "QoLChanges_ScarecrowRadius";
         private const string HammerItem = "Hammer";
 
+        // The zone of a scarecrow reaches crop plots up to two floors above and below it.
+        private const int NeighbourFloors = 2;
+
         // Transparent, coloured by vertex, hidden behind blocks; always included in Unity builds.
         private const string LineShader = "Sprites/Default";
 
@@ -202,7 +205,7 @@ namespace QoLChanges.Features.ScarecrowRadius
 
         private ScarecrowRing CreateRing()
         {
-            return new ScarecrowRing(transform, _material, _config.lineWidth / 100f);
+            return new ScarecrowRing(transform, _material, _config.lineWidth / 100f, _config.neighbouringFloors ? NeighbourFloors : 0);
         }
 
         /// <summary>The hammer or a scarecrow selected in the hotbar, when it is enabled and no menu is open.</summary>

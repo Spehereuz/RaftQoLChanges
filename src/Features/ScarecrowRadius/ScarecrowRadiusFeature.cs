@@ -23,6 +23,7 @@ namespace QoLChanges.Features.ScarecrowRadius
         {
             yield return new ToggleSetting("With hammer", () => _config.withHammer, value => _config.withHammer = value);
             yield return new ToggleSetting("With scarecrow", () => _config.withScarecrow, value => _config.withScarecrow = value);
+            yield return new ToggleSetting("Neighbouring floors", () => _config.neighbouringFloors, value => _config.neighbouringFloors = value);
             yield return new IntSliderSetting(
                 "Line width",
                 ScarecrowRadiusConfig.MinLineWidth,
