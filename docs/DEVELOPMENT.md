@@ -138,6 +138,17 @@ smelters, the paint mill, the pot and the juicer; aim at single items on multi-i
 out and remove the battery to see `no fuel` / `no power`. For multiplayer, a second player compares the
 cooking and purifying percentages with the host; nothing is sent over the network.
 
+Auto-replace check: in Creative run `qoldev.wear on`, then `qoldev.give Hook_Plastic`, `qoldev.give Hook_Scrap`,
+`qoldev.give Hook_Titanium`, `qoldev.give Axe 3`, `qoldev.give Axe_Titanium`. Keep the scrap hook and one axe in the hotbar
+and move everything else into the inventory. Select the scrap hook, `qoldev.dur 1` and use it until it breaks: the titanium
+hook (nearest better tier) takes its place; break that one too: the plastic hook comes. Run `qoldev.dur.all random`, note
+the durability of the two axes in the inventory and break the selected axe: the more worn metal axe comes; with no metal
+axe left, the titanium one. Give two stacks of `Cooked_Potato` and of a seed, eat or plant the last item of the selected
+stack: the smaller stack from the inventory moves in. Place the last storage or grill of a stack, put the last battery into
+a purifier, throw the last shark bait. Drink the last sip from a canteen: the empty canteen stays. Drop the last item with
+`Q`, move it with the mouse, put it into a storage or craft with it: the slot stays empty. Switch off each group and
+**Use other tiers** and repeat one case of it.
+
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
 `qoldev.dur.all random`, then compare the text with the bars; `qoldev.dur 1` and
@@ -243,13 +254,39 @@ _CanvasGame_New
   `greenLimit`, `yellowLimit`, `orangeLimit` and turn yellow early; hover info uses the item's `BarGradient`
   instead, like the durability text in the inventory.
 
+## Using up items
+
+Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
+slots, so moving items by hand never looks like using them up.
+
+- Tools and weapons: `PlayerInventory.RemoveDurabillityFromHotSlot` → `RemoveStacksFromSlot(Slot, int)` (also used for
+  equipment with its own slots) → `Slot.IncrementUses(-n)`. Creative skips it (`areToolsIndestructible`).
+- `Slot.IncrementUses`: when the uses run out one item of the stack is removed; the last one is replaced by
+  `ItemAfterUse` (empty canteen, bowl, glass) or the slot is emptied, then a player slot calls
+  `Hotbar.ReselectCurrentSlot()`.
+- Eating and drinking: `UseItemController.Use` → coroutine `ConsumeStacks(int, float)`, which captures the selected slot
+  and calls `IncrementUses` after the animation delay.
+- `Inventory.RemoveItem(string, int)` removes from the **first** slots holding the item (hotbar first), not from the
+  selected one. It is used by seeds (`PlantManager.PlantSeed`), fuel (`Block_CookingStand.IncrementFuel`,
+  `FuelNetwork.AddFuel`), salves, buffs, mystery packages, thrown items, fireworks, trophies, cassettes, but also by
+  crafting (`RemoveCostMultiple`), trading, quests and `SortPlayerInventoryIntoStorage`.
+- `PlayerInventory.RemoveSelectedHotSlotItem(int)`: batteries (`Battery.Insert`), shark bait
+  (`SharkBaitThrower.OnHitWater`), containers filled at tanks and purifiers. Placeables: `BlockCreator.CreateBlock` takes
+  one item from `hotslotIndex`.
+- `Inventory.RemoveItemUses` is used only by the cooking pot / juicer (`CookingTable_Slot.InsertItem`) and tanks.
+- Slot layout of `PlayerInventory.allSlots`: hotbar first (`hotslotCount`), then the inventory (`SlotType.Normal`) and the
+  backpack (`SlotType.Backpack`, usable only while `backpackEquipped`); equipment slots are `Slot_Equip`.
+- `Inventory.MoveSlotToEmpty` plays the UI move sound; Auto-replace moves items with `Slot.SetItem` (clones the instance)
+  to stay silent. Player inventories are local: moving items sends nothing, `ReselectCurrentSlot` tells other players
+  what is in the hand. The local player is `ComponentManager<Network_Player>.Value`.
+
 ## Useful game facts
 
 | Area | Types and members |
 |---|---|
 | Items | `ItemManager.GetAllItems()`, `Item_Base.settings_Inventory`, `ItemInstance`, `Slot.RefreshComponents()` |
 | Durability | `Item_Base.MaxUses`, `Item_Base.BarGradient`, `ItemInstance.Uses` / `NormalizedUses`, `Slot.IncrementUses()`; `settings_consumeable.FoodForm` (`Fluid` = drink, `Solid` = food) |
-| Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` |
+| Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`, `GetSelectedHotbarSlot`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` (`GetSelectedSlotIndex`, `ReselectCurrentSlot`) |
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
 | Crafting | `CraftingMenu`, `CostCollection` |
 | Raft | `Anchor_Stationary`, `EngineControls`, `MotorWheel`, `Sail`, `SteeringWheel` |

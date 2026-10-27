@@ -21,6 +21,7 @@ self-contained and can be switched on or off independently.
 | Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item by 1–5 (at 5: 20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
 | Durability indicator | `durabilityIndicator` | on, `Percent` for every group | Writes the durability of items that have a durability bar on their slot, and the charge of batteries: `73%`, `88` or `88/120`, coloured like the bar. |
 | Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers, cooking and smelting. |
+| Auto-replace tool | `autoReplace` | on, every group | When the item in the selected hotbar slot breaks or is used up, moves the same item from the inventory into the slot; a broken tool can be replaced by another tier of the same tool. |
 
 ### Durability indicator
 
@@ -72,6 +73,39 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
   the same rules. Either way another player may see a slightly different percentage than the host until the
   host announces that it is done.
 
+### Auto-replace tool
+
+When the item in your hand is used up, the same item is taken from the inventory and put into the empty hotbar
+slot, so you keep working without opening the inventory. Nothing is shown or played: the item is simply back in
+your hand.
+
+| Group | When |
+|---|---|
+| Tools and weapons | A tool or weapon breaks: hooks, axes, fishing rods, spears, the sword, the bow, the shovel, the paddle, the machete, the metal detector, the sweep net, the net gun and others. |
+| Food and drinks | The last portion of food or a drink is eaten. |
+| Other consumables | The last item of a stack is placed (storages, grills, decorations and other placeables), planted (seeds, saplings), put into a machine (batteries, fuel, raw food, ores, pot and juicer ingredients, trophies, cassettes), used (healing salves, buff items, mystery packages) or thrown (shark bait, throwable items, fireworks). |
+
+- The replacement comes only from the main inventory, including an equipped backpack; other hotbar slots and
+  equipment are never touched.
+- Several copies of a tool: the most worn one is taken first. Several stacks: the smallest one is taken first.
+- **Use other tiers**: when no copy of a broken tool is left, another tier of the same tool is used: the nearest
+  better tier first, then the nearest worse one. Only tools of one group replace each other:
+
+  | Group | Tiers, worst to best |
+  |---|---|
+  | Hooks | plastic, scrap, titanium |
+  | Axes | stone, metal, titanium |
+  | Fishing rods | fishing rod, metal fishing rod |
+  | Melee weapons | wooden spear, metal spear, titanium sword |
+
+  Food, consumables, single-tier tools and items of other mods are replaced only by the same item.
+- Only an empty slot is refilled. Water containers and bowls that turn into an empty container after the last sip
+  or bite stay in the hand, and armor, flippers, head lights, oxygen bottles and zipline tools in the equipment
+  slots are not replaced.
+- Dropping, moving or storing an item, and crafting with it, never refills the slot.
+- Client-side: only your own inventory changes, the same way as moving the item by hand. Other players do not need
+  the mod.
+
 ### In-game menu
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
@@ -87,6 +121,7 @@ After disabling Stack size they stay intact: you can take items out of them, but
 they drop below the vanilla limit.
 
 Durability indicator and Hover info only add text to the game's UI and leave nothing behind when disabled.
+Auto-replace tool only moves items that you could move by hand; disabling it changes nothing.
 
 ## Configuration
 
@@ -113,6 +148,13 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "purifiers": true,
     "cooking": true,
     "smelters": true,
+    "enabled": true
+  },
+  "autoReplace": {
+    "tools": true,
+    "useOtherTiers": true,
+    "food": true,
+    "consumables": true,
     "enabled": true
   },
   "menu": {
