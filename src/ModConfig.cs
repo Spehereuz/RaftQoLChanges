@@ -1,5 +1,6 @@
 using System;
 using QoLChanges.Core;
+using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
@@ -15,6 +16,8 @@ namespace QoLChanges
 
         public StackSizeConfig stackSize = new StackSizeConfig();
 
+        public DurabilityIndicatorConfig durabilityIndicator = new DurabilityIndicatorConfig();
+
         public void Normalize()
         {
             if (stackSize == null)
@@ -22,7 +25,13 @@ namespace QoLChanges
                 stackSize = new StackSizeConfig();
             }
 
+            if (durabilityIndicator == null)
+            {
+                durabilityIndicator = new DurabilityIndicatorConfig();
+            }
+
             stackSize.Normalize();
+            durabilityIndicator.Normalize();
         }
     }
 }

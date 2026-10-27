@@ -1,5 +1,6 @@
 using System.IO;
 using QoLChanges.Core;
+using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.StackSize;
 
 namespace QoLChanges
@@ -16,6 +17,7 @@ namespace QoLChanges
 
             Features = new FeatureManager();
             Features.Register(new StackSizeFeature(Config.stackSize));
+            Features.Register(new DurabilityIndicatorFeature(Config.durabilityIndicator));
         }
 
         public ModConfig Config { get; }
