@@ -69,6 +69,7 @@ Core/
   Percent          rounding of shown percentages: remaining (floor, at least 1% above zero),
                    progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
+GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel)
 UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
                    one section per feature), StatusText (coloured rich-text values for hover info and the HUD)
 ```
@@ -137,8 +138,10 @@ charge as durability text. Plant seeds and water only some of them; aim at each 
 empty hands and with an item, and at the soil around them for the summary of the plot. Pour salt water into
 the advanced purifier several times with fuel burning to see mixed portions. Cook on every grill, both
 smelters, the paint mill, the pot and the juicer; aim at single items on multi-item grills, let the fire go
-out and remove the battery to see `no fuel` / `no power`. For multiplayer, a second player compares the
-cooking and purifying percentages with the host; nothing is sent over the network.
+out and remove the battery to see `no fuel` / `no power`. Aim at the body, the tank and both levers of an engine:
+`Fuel 50%` while it is off, `Fuel 50% · 25 min` while it runs, `· paused` with an anchor down, `Fuel Empty` after
+`qoldev.fuel 0`; with `qoldev.fuel 30%` and another engine at 80%, each engine shows its own value. For multiplayer, a
+second player compares the cooking and purifying percentages with the host; nothing is sent over the network.
 
 Auto-replace check: in Creative run `qoldev.wear on`, then `qoldev.give Hook_Plastic`, `qoldev.give Hook_Scrap`,
 `qoldev.give Hook_Titanium`, `qoldev.give Axe 3`, `qoldev.give Axe_Titanium`. Keep the scrap hook and one axe in the hotbar

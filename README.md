@@ -20,7 +20,7 @@ self-contained and can be switched on or off independently.
 |---|---|---|---|
 | Stack size | `stackSize` | on, `multiplier: 5` | Multiplies the stack size of every stackable item by 1–5 (at 5: 20 → 100, 5 → 25, arrows 30 → 150). Items that never stack (tools, equipment, water containers) are unchanged. |
 | Durability indicator | `durabilityIndicator` | on, `Percent` for every group | Writes the durability of items that have a durability bar on their slot, and the charge of batteries: `73%`, `88` or `88/120`, coloured like the bar. |
-| Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers, cooking and smelting. |
+| Hover info | `hoverInfo` | on, every target | Shows the state of the object under the crosshair in a line below it: battery charge, plant growth, water purifiers, engine fuel, cooking and smelting. |
 | Auto-replace tool | `autoReplace` | on, every group | When the item in the selected hotbar slot breaks or is used up, moves the same item from the inventory into the slot; a broken tool can be replaced by another tier of the same tool. |
 | Raft status HUD | `raftStatus` | on, every line, 100% | While you are on the raft, lines above the health bar show whether the raft is anchored, how many engines run and where they push it, whether they are strong enough for the raft and how long their fuel lasts. |
 
@@ -59,6 +59,7 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
 | Grill (simple, advanced, electric) | `Raw salmon · cooking 45%` or `Cooked salmon ready`; with several items `2 cooking (45%) · 1 ready`. Aiming at one of the items shows only that item. |
 | Smelter, electric smelter, paint mill | the same with `smelting` / `grinding`: `Metal ore · smelting 45%` |
 | Cooking pot, juicer | `Fish stew · cooking 45%` / `Smoothie · blending 45%`, then `Fish stew · 3 portions` |
+| Engine (any part of it) | `Fuel 72% · 36 min` while it burns fuel, `Fuel 72% · paused` while it runs but an anchor holds the raft or the raft is too heavy, `Fuel 72%` when switched off, `Fuel Empty`. Same text and colours as the fuel line of the [Raft status HUD](#raft-status-hud), which shows only the emptiest engine. |
 
 - A plant grows only after it has been watered once and then grows until it is harvested. The game asks
   for water only while you hold an item; `Needs water` is shown with empty hands as well.
@@ -66,8 +67,8 @@ state, mirroring the game's own prompt above the crosshair. Labels are white, va
   aimed at; the soil around plants shows the summary of the plot.
 - Grills, smelters and pots add `· no fuel` / `· no power` while something waits because the fire is out or
   the battery is off or empty. Ingredients in a pot that has not started cooking show nothing.
-- Each target group can be switched off separately: Batteries, Plants, Water purifiers, Cooking (grills,
-  cooking pot, juicer), Smelters and paint mill. The battery slot is described on its own, aiming at the
+- Each target group can be switched off separately: Batteries, Plants, Water purifiers, Engine fuel, Cooking
+  (grills, cooking pot, juicer), Smelters and paint mill. The battery slot is described on its own, aiming at the
   rest of a machine does not show its battery.
 - Client-side and read-only. Plant timers run on every player's game and the host announces when a plant is
   ready. Cooking and purifying timers run only on the host; other players' games advance their own copy with
@@ -178,6 +179,7 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "battery": "Percent",
     "plants": true,
     "purifiers": true,
+    "engineFuel": true,
     "cooking": true,
     "smelters": true,
     "enabled": true
@@ -269,6 +271,7 @@ src/                 everything here is packed into the .rmod
   Core/              feature base class (own Harmony instance per feature), declarative feature
                      settings, JSON config, logging
   Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
+  GameState/         game state read by several features (raft anchors, engines and fuel)
   UI/                pause menu "Mods" button and window; widgets are cloned from Raft's own
                      pause and settings menus at runtime, so no game assets are shipped; the
                      shared HUD panel above the stat bars
