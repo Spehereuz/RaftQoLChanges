@@ -25,27 +25,6 @@ namespace QoLChanges.Features.HoverInfo
         private static readonly AccessTools.FieldRef<Battery, ItemInstance> BatteryInstanceField =
             AccessTools.FieldRefAccess<Battery, ItemInstance>("batteryInstance");
 
-        private static readonly AccessTools.FieldRef<Battery, float> GreenLimitField =
-            AccessTools.FieldRefAccess<Battery, float>("greenLimit");
-
-        private static readonly AccessTools.FieldRef<Battery, float> YellowLimitField =
-            AccessTools.FieldRefAccess<Battery, float>("yellowLimit");
-
-        private static readonly AccessTools.FieldRef<Battery, float> OrangeLimitField =
-            AccessTools.FieldRefAccess<Battery, float>("orangeLimit");
-
-        private static readonly AccessTools.FieldRef<Battery, Color> GreenField =
-            AccessTools.FieldRefAccess<Battery, Color>("green");
-
-        private static readonly AccessTools.FieldRef<Battery, Color> YellowField =
-            AccessTools.FieldRefAccess<Battery, Color>("yellow");
-
-        private static readonly AccessTools.FieldRef<Battery, Color> OrangeField =
-            AccessTools.FieldRefAccess<Battery, Color>("orange");
-
-        private static readonly AccessTools.FieldRef<Battery, Color> RedField =
-            AccessTools.FieldRefAccess<Battery, Color>("red");
-
         private readonly Func<BatteryDisplayMode> _mode;
 
         public BatteryHoverInfo(Func<BatteryDisplayMode> mode)
@@ -70,7 +49,7 @@ namespace QoLChanges.Features.HoverInfo
             ItemInstance instance = BatteryInstanceField(battery);
             int max = instance.BaseItemMaxUses;
             int uses = Mathf.Clamp(instance.Uses, 0, max);
-            text = "Battery " + HoverText.Colored(Format(uses, max), ChargeColor(battery, instance.NormalizedUses));
+            text = "Battery " + HoverText.Colored(Format(uses, max), ChargeColor(instance.baseItem, uses, max));
             return true;
         }
 
@@ -87,24 +66,11 @@ namespace QoLChanges.Features.HoverInfo
             }
         }
 
-        /// <summary>Same thresholds and colours as the lights of the battery slot (Battery.UpdateBatteryHolderLights).</summary>
-        private static Color ChargeColor(Battery battery, float charge)
+        /// <summary>Same colour as the charge bar and the durability text of the battery in the inventory.</summary>
+        private static Color ChargeColor(Item_Base item, int uses, int max)
         {
-            Color color = RedField(battery);
-            if (charge > GreenLimitField(battery))
-            {
-                color = GreenField(battery);
-            }
-            else if (charge > YellowLimitField(battery))
-            {
-                color = YellowField(battery);
-            }
-            else if (charge > OrangeLimitField(battery))
-            {
-                color = OrangeField(battery);
-            }
-
-            return HoverText.FromEmission(color);
+            Gradient gradient = item != null ? item.BarGradient : null;
+            return gradient != null && max > 0 ? gradient.Evaluate((float)uses / max) : Color.white;
         }
     }
 }

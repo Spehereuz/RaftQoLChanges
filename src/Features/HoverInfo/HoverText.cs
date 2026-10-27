@@ -33,20 +33,5 @@ namespace QoLChanges.Features.HoverInfo
 
             return string.IsNullOrEmpty(second) ? first : first + Separator + second;
         }
-
-        /// <summary>
-        /// Makes an emissive colour (HDR, used for lights on models) readable as text: the brightest channel is
-        /// scaled to 1, black falls back to white.
-        /// </summary>
-        public static Color FromEmission(Color color)
-        {
-            float max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            if (max <= 0.001f)
-            {
-                return Color.white;
-            }
-
-            return new Color(color.r / max, color.g / max, color.b / max, 1f);
-        }
     }
 }
