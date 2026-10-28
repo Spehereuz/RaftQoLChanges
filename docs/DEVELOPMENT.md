@@ -120,6 +120,7 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 | `qoldev.fuel <units\|percent%>` | Host only: sets the fuel of every engine on the raft (a tank holds 50 units) and sends it to other players like the game does. |
 | `qoldev.scarecrow [parts]` | Host only: removes that many parts (default 1) of the basic scarecrow under the crosshair through `Scarecrow.DamageScarecrow`, like a pecking seagull, sent to other players like the game does. After the last part the game removes the scarecrow 3 seconds later. |
 | `qoldev.net <count\|full\|clear>` | Host only: empties the collection net under the crosshair and fills it with that many pieces of debris (`full`: up to its limit, `clear`: empty), sent to other players like the game does. Nothing goes into the inventory. |
+| `qoldev.chest [slots]` | Empties the open storage and puts random items into that many random slots (default: 3/4 of the slots): items of every Storage sort group, several part stacks of the same item, used tools and drinks, partly eaten food and sometimes one stack above the stack size. Synchronised when the storage is closed. |
 
 - Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
 - Durability is changed through `Slot.SetUses`, like the game does: `0` breaks a tool, turns a
@@ -195,6 +196,19 @@ destroyed, its line disappears and the plots around it turn red. Aim at the adva
 refuses. In a Normal world, wait for a seagull on a basic scarecrow: `Parts 3/3 · seagull`, then one part less. Plant crops just
 outside a line and just inside it and watch which ones seagulls attack. For multiplayer, a second player compares the lines, the
 glow and `Parts` with the host while the host runs `qoldev.scarecrow`.
+
+Storage sort check: build a small, a medium and a large storage, a cupboard and a fridge if available. Open the small storage and
+run `qoldev.chest`: with **By category** press the sort button: resources first, then tools, weapons, equipment, food, drinks, seeds,
+placeables and other, each group in alphabetical order, the empty slots at the end. Part stacks of one item are merged into full
+stacks plus one remainder; used tools, canteens and the partly eaten catfish stay after the whole stacks of their item, the least
+used first; the stack above the stack size stays whole in front of the other stacks of its item. Run `qoldev.chest` again and try
+**Alphabetical** and **Vanilla**; Vanilla must look exactly like the game without the mod (used items at the end). Repeat in the
+large storage with `qoldev.chest 40`. Put planks and nails into the hotbar, switch on **Sort after storing** and press the store
+button and its key: the planks and nails go into the storage and it is sorted. Switch the feature off: the sort button sorts the
+vanilla way. Restart the game: **Sort order** and **Sort after storing** stay. Sorting an empty storage changes nothing. In
+multiplayer, the host fills and sorts a storage and closes it; a second player without the mod opens it and sees the same order.
+Then the second player with the mod sorts a storage as a client and closes it; the host opens it and sees the same order, also
+after saving and loading the world.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -388,6 +402,47 @@ _CanvasGame_New
 - Lines use `Sprites/Default` (always included: vertex colour, alpha blending, depth test, no depth write). Crop plot models use
   `BlockPaint`; Scarecrow radius lights them with `_BuildingEmission` (0.1, 0.3, 0.05) / (0.4, 0.06, 0.04) like Full net indicator.
 
+## Storages and sorting
+
+```
+_CanvasGame_New/InventoryParent (Inventory.Parent)
+  Inventory_Storage_Small / _Medium / _Large / _Cupboard / _Fridge   (Inventory), created per storage from
+                                            Storage_Small.inventoryPrefab in OnFinishedPlacement
+    BrownBackground (1)
+    DescriptionBox
+      IconBackground: Icon, ChestText,
+        Sort button                    (Inventory.sortButton) sprite InventorySortIcon, onClick Inventory.Sort
+        Sort Player Inventory button   (Inventory.dumpButton) sprite InventorySortIntoStorage,
+                                       onClick Inventory.SortPlayerInventoryIntoStorage
+    SlotParent (GridLayoutGroup): Slot_Inventory x N
+  Inventory_Storage_Trashcan (Inventory_Trashcan): only a "Sort button" that empties the trash
+```
+
+- Both buttons are 94.8 x 96 scaled by 0.44 (about 42 px), anchored to the top-right corner of `IconBackground` 46 px apart.
+  `Inventory.Update` shows them only without a gamepad. The small storage and the cupboard have little room left between
+  `ChestText` and the buttons.
+- `StorageManager.Update` (local player, storage open): the keyboard binding `SortStorage` (action `SortPlayerIntoChest`) calls
+  `SortPlayerInventoryIntoStorage` (or empties a trash can), the gamepad action `SortChest` calls `Inventory.Sort`. Nothing else
+  calls `Inventory.Sort`.
+- `Inventory.Sort`: items with full uses and `Amount <= StackSize` are summed per `UniqueIndex` (in the order they first appear,
+  by dictionary order) and added again with `AddItem(name, amount)` in full stacks plus a remainder: new instances, so
+  `exclusiveString` is lost. The rest (used items, stacks above the stack size) is cloned and added at the end ordered by
+  `UniqueIndex`. `AddItem` plays the UI move sound for every stack.
+- `SortPlayerInventoryIntoStorage` (storage inventory, `secondInventory` = player inventory): moves the same kinds of whole
+  items that the storage already holds from the player inventory, hotbar included, into it.
+- Storage contents are synchronised only when the storage closes (`Message_Storage_Close` with all slots), so any change made
+  while it is open by the local player reaches the host and the other players.
+- Storage sort patches `Inventory.Sort` with a prefix (the original runs for Vanilla, non-storage inventories and on errors) and
+  writes all slots with `Slot.SetItem` from a finished plan; if a write fails the original instances are written back.
+- `CraftingCategory` is `Nothing` for 274 of 584 vanilla items (materials, food, water, blueprints, trophies, building blocks);
+  seeds are `CreativeMode`, some decorations `Skin`. Storage sort groups by its own rules (`StorageGroups`): crafting
+  ingredients from `settings_recipe.NewCost`, cooking pot ingredients from `Resources.LoadAll<SO_CookingTable_Recipe>("SO_CookingRecipes")`,
+  seeds from `PlantManager.allPlants` (`Plant.item`, includes raw potato and beet), containers from `ItemAfterUse` of food and
+  drinks, smeltable ores from `settings_cookable.CookingResult`. `settings_buildable.Placeable` marks real placeables;
+  `blockPrefabs` is also set on ingots, spices, bait and trophies, so it is not used.
+- Display names are localised at runtime (`Settings` rewrites `settings_Inventory.DisplayName` when the language changes);
+  the serialized value of some items is Swedish.
+
 ## Using up items
 
 Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
@@ -421,11 +476,11 @@ slots, so moving items by hand never looks like using them up.
 | Items | `ItemManager.GetAllItems()`, `Item_Base.settings_Inventory`, `ItemInstance`, `Slot.RefreshComponents()` |
 | Durability | `Item_Base.MaxUses`, `Item_Base.BarGradient`, `ItemInstance.Uses` / `NormalizedUses`, `Slot.IncrementUses()`; `settings_consumeable.FoodForm` (`Fluid` = drink, `Solid` = food) |
 | Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`, `GetSelectedHotbarSlot`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` (`GetSelectedSlotIndex`, `ReselectCurrentSlot`) |
-| Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`) |
+| Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`, static `allStorages`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()` |
 | Crafting | `CraftingMenu`, `CostCollection` |
 | Raft | `Raft` (`AnchorCount`, `remoteAnchors`), `Anchor_Stationary`, `Anchor_Throwable_Stand`, `EngineControls`, `MotorWheel` (`FuelTank`, `engineSwitchOn`, `rotatesForward`), `RaftVelocityManager`, `RaftWeightManager`, `Sail`, `SteeringWheel` |
 | World | `ItemCollector` (`maxNumberOfItems`, `collectedItems`), `ItemNet`, `Scarecrow` (`parts`, `invurnerable`, `Occupied`), `Seagull` (`searchScarecrowRadius`, `currentState`), `PlantManager.allCropplots`, `Plant`, `Cropplot` (`peckable`, `mainCollider`), `Battery`, `Tank`, `Electric_Purifier` |
 | Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |
 | Tools | `Hook`, `ChargeMeter`, `Throwable` |
 | Notebook / research | `NoteBook`, `NoteBookUI`, `ResearchTable`, `Inventory_ResearchTable` |
-| Input | Input System actions; vanilla storage actions `SortPlayerIntoChest`, `SortChest` |
+| Input | Input System actions; vanilla storage actions `SortPlayerIntoChest` (keyboard binding `SortStorage`), `SortChest` (gamepad only) |

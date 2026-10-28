@@ -25,6 +25,7 @@ self-contained and can be switched on or off independently.
 | Raft status HUD | `raftStatus` | on, every line, 100% | While you are on the raft, lines above the health bar show whether the raft is anchored, how many engines run and where they push it, whether they are strong enough for the raft and how long their fuel lasts. |
 | Full net indicator | `fullNet` | on | Collection nets glow red while they are full and catch nothing more. |
 | Scarecrow radius | `scarecrowRadius` | on, crop plots lit, 4 cm lines | While the hammer or a scarecrow is selected, outlines where scarecrows keep seagulls away and lights crop plots green inside and red outside of it. |
+| Storage sort | `storageSort` | on, by category | The sort button of a storage groups the items by category or puts them in alphabetical order instead of the game's order. |
 
 ### Durability indicator
 
@@ -176,6 +177,45 @@ scarecrows, which break, green for advanced ones. A crop plot whose centre is in
 - Client-side and purely visual. Seagulls are controlled by the host, but every player has the same scarecrows and crop
   plots, so every player sees the same zones; other players do not need the mod.
 
+### Storage sort
+
+Every storage has a sort button next to its name; the game shows it only while you play with keyboard and mouse.
+Storage sort lets this button put the items in another order, chosen with **Sort order** on the settings page:
+
+| Order | Result |
+|---|---|
+| By category | Items grouped as below, each group in alphabetical order. Default. |
+| Alphabetical | Every item by its English name. |
+| Vanilla | The game's own sort: the order in which the items first appear in the storage, used items at the end. |
+
+| Group | Items |
+|---|---|
+| Resources | planks, plastic, scrap, rope, nails, ores, ingots, clay, sand, glass, leather, feathers, flowers, paint, biofuel, batteries, trash cubes |
+| Tools | hooks, axes, fishing rods and bait, shovel, shears, sweep net, metal detector, binoculars, hammer, paddle, paint brush, compass, shark bait, fireworks |
+| Weapons | spears, machete, sword, bow, arrows, net gun and canisters |
+| Equipment | armor, flippers, backpacks, head lights, oxygen bottle, zipline tools, hats and heads |
+| Food | raw and cooked food, fruit, dishes, spices and milk for the cooking pot, healing salves |
+| Drinks | water, smoothies, head broth, empty canteens, cups, bottles, bowls and glasses, the bucket |
+| Seeds | seeds, saplings, potatoes and beets |
+| Placeables | storages, grills, purifiers, crop plots, furniture, decorations, sails, anchors, engines |
+| Other | blueprints, recipe notes, fish trophies, cassettes, trade coins, packages |
+
+- Like the vanilla sort, stacks of the same unused item are merged and filled up to the stack size, and the empty slots end
+  up at the end.
+- Used items (worn tools, partly eaten food, partly drunk canteens) are never merged. They stay next to the same item,
+  after its whole stacks, the least used first.
+- Stacks larger than the stack size, left over after lowering the **Stack size** multiplier, stay as they are, in front of
+  the other stacks of the same item.
+- Unlike the vanilla sort, items are not created anew, so every item keeps all of its own data.
+- Items of other mods are grouped by their crafting category and their properties: wearable items go to Equipment, food to
+  Food and so on; anything that fits no group goes to Other.
+- **Sort after storing** also sorts the storage after the button (or key) that stores the items of your inventory that the
+  storage already holds. Off by default.
+- Small, medium and large storages, cupboards and fridges are sorted; the trash can is left alone. The gamepad sort action
+  uses the same order.
+- The storage is locked to you while it is open, and the game sends its slots to the host when you close it, the same way
+  as after the vanilla sort. Other players do not need the mod.
+
 ### In-game menu
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
@@ -193,7 +233,8 @@ they drop below the vanilla limit.
 Durability indicator, Hover info and Raft status HUD only add text to the game's UI and leave nothing behind when
 disabled. Full net indicator removes the glow from every net when disabled. Scarecrow radius removes its lines and the
 light of crop plots as soon as the hammer or scarecrow is put away or the feature is disabled.
-Auto-replace tool only moves items that you could move by hand; disabling it changes nothing.
+Auto-replace tool only moves items that you could move by hand; disabling it changes nothing. Storage sort only changes
+the order of the sort button; disabled, the button sorts the vanilla way again.
 
 ## Configuration
 
@@ -252,6 +293,11 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "lineWidth": 4,
     "enabled": true
   },
+  "storageSort": {
+    "order": "ByCategory",
+    "sortAfterStoring": false,
+    "enabled": true
+  },
   "menu": {
     "expandedFeatures": []
   }
@@ -263,7 +309,7 @@ The in-game menu is the intended way to change settings; when editing the file b
 the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
 Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`.
 The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. The scarecrow `lineWidth` is in centimetres,
-clamped to 2–10. `menu.expandedFeatures` lists
+clamped to 2–10. The storage sort `order` is `Vanilla`, `ByCategory` or `Alphabetical`. `menu.expandedFeatures` lists
 the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
 
