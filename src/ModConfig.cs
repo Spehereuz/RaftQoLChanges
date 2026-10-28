@@ -4,6 +4,7 @@ using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
+using QoLChanges.Features.PinnedRecipes;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
@@ -36,6 +37,8 @@ namespace QoLChanges
         public ScarecrowRadiusConfig scarecrowRadius = new ScarecrowRadiusConfig();
 
         public StorageSortConfig storageSort = new StorageSortConfig();
+
+        public PinnedRecipesConfig pinnedRecipes = new PinnedRecipesConfig();
 
         public MenuConfig menu = new MenuConfig();
 
@@ -81,6 +84,11 @@ namespace QoLChanges
                 storageSort = new StorageSortConfig();
             }
 
+            if (pinnedRecipes == null)
+            {
+                pinnedRecipes = new PinnedRecipesConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -94,6 +102,7 @@ namespace QoLChanges
             fullNet.Normalize();
             scarecrowRadius.Normalize();
             storageSort.Normalize();
+            pinnedRecipes.Normalize();
             menu.Normalize();
         }
     }

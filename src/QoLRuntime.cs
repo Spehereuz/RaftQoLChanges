@@ -4,6 +4,7 @@ using QoLChanges.Features.AutoReplace;
 using QoLChanges.Features.DurabilityIndicator;
 using QoLChanges.Features.FullNet;
 using QoLChanges.Features.HoverInfo;
+using QoLChanges.Features.PinnedRecipes;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
@@ -30,6 +31,7 @@ namespace QoLChanges
             Features.Register(new FullNetFeature(Config.fullNet));
             Features.Register(new ScarecrowRadiusFeature(Config.scarecrowRadius));
             Features.Register(new StorageSortFeature(Config.storageSort));
+            Features.Register(new PinnedRecipesFeature(Config.pinnedRecipes));
         }
 
         public ModConfig Config { get; }
