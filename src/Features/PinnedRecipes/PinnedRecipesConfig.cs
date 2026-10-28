@@ -19,6 +19,9 @@ namespace QoLChanges.Features.PinnedRecipes
         /// <summary>A line with the ingredients under every recipe.</summary>
         public bool showIngredients = true;
 
+        /// <summary>A pinned recipe is unpinned after it has been crafted once.</summary>
+        public bool unpinAfterCrafting;
+
         /// <summary>Size of the HUD lines in percent: 75, 100, 125 or 150.</summary>
         public int scale = 100;
 

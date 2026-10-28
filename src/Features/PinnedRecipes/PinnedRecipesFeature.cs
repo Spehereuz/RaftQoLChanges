@@ -23,6 +23,7 @@ namespace QoLChanges.Features.PinnedRecipes
         public override IEnumerable<FeatureSetting> GetSettings()
         {
             yield return new ToggleSetting("Show ingredients", () => _config.showIngredients, value => _config.showIngredients = value);
+            yield return new ToggleSetting("Unpin after crafting", () => _config.unpinAfterCrafting, value => _config.unpinAfterCrafting = value);
             yield return new IntSliderSetting(
                 "HUD size",
                 PinnedRecipesConfig.MinScale / PinnedRecipesConfig.ScaleStep,
@@ -37,6 +38,7 @@ namespace QoLChanges.Features.PinnedRecipes
             PinnedRecipesService.Activate(_config, SaveConfig);
             PinnedRecipesHud.Activate(_config);
             PinButton.Activate();
+            Patch(typeof(CraftItemPatch));
         }
 
         protected override void OnDisable()

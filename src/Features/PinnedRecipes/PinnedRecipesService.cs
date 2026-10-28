@@ -1,4 +1,5 @@
 using System;
+using QoLChanges.Core;
 
 namespace QoLChanges.Features.PinnedRecipes
 {
@@ -51,6 +52,28 @@ namespace QoLChanges.Features.PinnedRecipes
 
             Save();
             return true;
+        }
+
+        /// <summary>
+        /// Unpins an item crafted with the craft button when <see cref="PinnedRecipesConfig.unpinAfterCrafting"/> is on.
+        /// Only the pinned variant counts: crafting another skin of the same recipe keeps it pinned.
+        /// </summary>
+        public static void OnCrafted(Item_Base item)
+        {
+            if (_config == null || !_config.unpinAfterCrafting)
+            {
+                return;
+            }
+
+            // Runs after the game has crafted the item; an exception here must not reach the game.
+            try
+            {
+                Unpin(item);
+            }
+            catch (Exception e)
+            {
+                ModLog.Error(PinnedRecipesFeature.FeatureId + ": failed to unpin a crafted recipe.", e);
+            }
         }
 
         private static void Save()
