@@ -17,6 +17,9 @@ namespace QoLChanges.UI
         /// <summary>Clockwise angle of the arrow from screen up, in degrees; null hides the arrow.</summary>
         public float? ArrowAngle { get; set; }
 
+        /// <summary>On a <see cref="HudSectionStyle.Panel"/>, a divider is drawn above the line unless it is the first.</summary>
+        public bool StartsGroup { get; set; }
+
         /// <summary>Drawn after the text, left to right.</summary>
         public List<HudSegment> Segments { get; } = new List<HudSegment>();
 
@@ -59,6 +62,19 @@ namespace QoLChanges.UI
         TopRight,
     }
 
+    /// <summary>How the lines of a section are drawn.</summary>
+    internal enum HudSectionStyle
+    {
+        /// <summary>Text with a shadow, straight on the screen.</summary>
+        Plain,
+
+        /// <summary>
+        /// On a half-transparent wooden panel with an optional title, dividers between groups of lines and item icons on
+        /// slot backgrounds.
+        /// </summary>
+        Panel,
+    }
+
     /// <summary>
     /// A block of lines owned by one feature. The owner changes the lines and the panel shows them on the next frame;
     /// lines are listed top to bottom.
@@ -69,6 +85,7 @@ namespace QoLChanges.UI
         public const float MaxScale = 2f;
 
         private float _scale = 1f;
+        private float _backgroundOpacity = 1f;
 
         internal HudSection(string name, int order, HudCorner corner)
         {
@@ -85,6 +102,21 @@ namespace QoLChanges.UI
         public HudCorner Corner { get; }
 
         public bool Visible { get; set; }
+
+        public HudSectionStyle Style { get; set; }
+
+        /// <summary>Small heading above the lines of a <see cref="HudSectionStyle.Panel"/>; null or empty shows none.</summary>
+        public string Title { get; set; }
+
+        /// <summary>
+        /// Opacity of the panel, its dividers and slot backgrounds, 0-1. At 0 a <see cref="HudSectionStyle.Panel"/> is drawn
+        /// like <see cref="HudSectionStyle.Plain"/> text, apart from its title.
+        /// </summary>
+        public float BackgroundOpacity
+        {
+            get { return _backgroundOpacity; }
+            set { _backgroundOpacity = Mathf.Clamp01(value); }
+        }
 
         /// <summary>Size of icons and text relative to the default size.</summary>
         public float Scale

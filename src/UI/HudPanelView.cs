@@ -11,7 +11,7 @@ namespace QoLChanges.UI
     /// Draws the <see cref="HudPanel"/> sections inside the game HUD, one panel per <see cref="HudCorner"/>. The panels
     /// live in the HUD canvas, so they are hidden together with the rest of the HUD; they are created again after a world
     /// is loaded. Text uses the font and shadow of the game's interaction prompt, arrows the sprite of the settings
-    /// dropdowns.
+    /// dropdowns; panel sections are drawn with <see cref="HudSprites"/>.
     /// </summary>
     internal sealed class HudPanelView : MonoBehaviour
     {
@@ -28,6 +28,22 @@ namespace QoLChanges.UI
         private const float BaseSegmentInnerSpacing = 3f;
         private const float SectionSpacing = 6f;
         private const float GapAboveBars = 12f;
+
+        // Panel style, at scale 1.
+        private const float PanelPaddingX = 14f;
+        private const float PanelPaddingTitle = 6f;
+        private const float PanelPaddingBottom = 12f;
+        private const int TitleFontSize = 15;
+        private const float TitleHeight = 22f;
+        private const float DividerHeight = 12f;
+        private const float DividerThickness = 2f;
+        private const float IconInset = 3f;
+        private const float SegmentIconInset = 2f;
+        private const int PanelSegmentFontSize = 18;
+        private const float ShadowOpacity = 0.35f;
+        private const float ShadowSpread = 6f;
+        private static readonly Vector2 ShadowOffset = new Vector2(3f, -4f);
+        private static readonly Color TitleColor = new Color(0.94f, 0.88f, 0.76f);
 
         // Health, hunger and thirst bars start with a 43 px wide icon background; HUD icons are centred on it.
         private const float StatIconCenterX = 21.5f;
@@ -91,6 +107,7 @@ namespace QoLChanges.UI
         {
             DestroyPanels();
             _views.Clear();
+            HudSprites.Release();
         }
 
         /// <summary>Shows the sections of one corner; a lower order is closer to the corner.</summary>
@@ -378,16 +395,6 @@ namespace QoLChanges.UI
             return child;
         }
 
-        private static Image CreateIcon(Transform parent, out LayoutElement layout)
-        {
-            GameObject icon = CreateChild(parent, "Icon");
-            Image image = icon.AddComponent<Image>();
-            image.preserveAspect = true;
-            image.raycastTarget = false;
-            layout = icon.AddComponent<LayoutElement>();
-            return image;
-        }
-
         private static Text CreateText(Transform parent, TextStyle style)
         {
             GameObject textObject = CreateChild(parent, "Text");
@@ -460,11 +467,91 @@ namespace QoLChanges.UI
             public Vector2 ShadowDistance;
         }
 
+        /// <summary>
+        /// An item icon on an optional slot background. The holder takes part in the layout and shows the slot; the icon
+        /// inside it is inset while the slot is shown.
+        /// </summary>
+        private sealed class SlotIcon
+        {
+            private readonly Image _slot;
+            private readonly Image _icon;
+            private readonly LayoutElement _layout;
+            private bool _slotShown;
+            private float _size = -1f;
+            private float _inset = -1f;
+            private float _opacity = -1f;
+
+            public SlotIcon(Transform parent)
+            {
+                GameObject holder = CreateChild(parent, "Icon");
+                _slot = holder.AddComponent<Image>();
+                _slot.raycastTarget = false;
+                _slot.enabled = false;
+                _layout = holder.AddComponent<LayoutElement>();
+
+                GameObject icon = CreateChild(holder.transform, "Image");
+                RectTransform rect = (RectTransform)icon.transform;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                _icon = icon.AddComponent<Image>();
+                _icon.preserveAspect = true;
+                _icon.raycastTarget = false;
+            }
+
+            /// <summary><paramref name="opacity"/> above 0 shows the slot behind the icon.</summary>
+            public void SetStyle(float size, float inset, float opacity)
+            {
+                _slotShown = opacity > 0f && HudSprites.Slot != null;
+                if (!Mathf.Approximately(_size, size))
+                {
+                    _size = size;
+                    SetSize(_layout, size);
+                }
+
+                float currentInset = _slotShown ? inset : 0f;
+                if (!Mathf.Approximately(_inset, currentInset))
+                {
+                    _inset = currentInset;
+                    _icon.rectTransform.offsetMin = new Vector2(currentInset, currentInset);
+                    _icon.rectTransform.offsetMax = new Vector2(-currentInset, -currentInset);
+                }
+
+                if (_slotShown && !Mathf.Approximately(_opacity, opacity))
+                {
+                    _opacity = opacity;
+                    _slot.sprite = HudSprites.Slot;
+                    _slot.color = new Color(1f, 1f, 1f, opacity);
+                }
+            }
+
+            public void Apply(Sprite sprite)
+            {
+                SetIcon(_icon, sprite);
+
+                // A line without an icon keeps the space but shows no empty slot.
+                bool showSlot = _slotShown && sprite != null;
+                if (_slot.enabled != showSlot)
+                {
+                    _slot.enabled = showSlot;
+                }
+            }
+        }
+
         private sealed class SectionView
         {
             private readonly List<RowView> _rows = new List<RowView>();
             private readonly TextStyle _style;
+            private readonly Image _shadow;
+            private readonly Image _background;
+            private readonly Transform _body;
+            private readonly VerticalLayoutGroup _bodyLayout;
+            private readonly Text _title;
+            private readonly LayoutElement _titleLayout;
             private float _scale = -1f;
+            private float _opacity = -1f;
+            private bool _hasTitle;
 
             public SectionView(Transform panel, TextStyle style, string name)
             {
@@ -472,6 +559,32 @@ namespace QoLChanges.UI
                 GameObject root = CreateChild(panel, "Section_" + name);
                 ConfigureStack(root.AddComponent<VerticalLayoutGroup>(), 0f);
                 Root = root.transform;
+
+                // Behind the body, stretched over the section and shifted down to the right; not part of the layout.
+                GameObject shadow = CreateChild(Root, "Shadow");
+                shadow.AddComponent<LayoutElement>().ignoreLayout = true;
+                RectTransform shadowRect = (RectTransform)shadow.transform;
+                shadowRect.anchorMin = Vector2.zero;
+                shadowRect.anchorMax = Vector2.one;
+                _shadow = shadow.AddComponent<Image>();
+                _shadow.raycastTarget = false;
+                _shadow.type = Image.Type.Sliced;
+                _shadow.enabled = false;
+
+                GameObject body = CreateChild(Root, "Body");
+                _background = body.AddComponent<Image>();
+                _background.raycastTarget = false;
+                _background.type = Image.Type.Sliced;
+                _background.enabled = false;
+                _bodyLayout = body.AddComponent<VerticalLayoutGroup>();
+                ConfigureStack(_bodyLayout, 0f);
+                _body = body.transform;
+
+                _title = CreateText(_body, style);
+                _title.gameObject.name = "Title";
+                _title.color = TitleColor;
+                _titleLayout = _title.gameObject.AddComponent<LayoutElement>();
+                _title.gameObject.SetActive(false);
             }
 
             public Transform Root { get; }
@@ -487,31 +600,38 @@ namespace QoLChanges.UI
             public void Apply(HudSection section, Sprite arrowSprite)
             {
                 List<HudLine> lines = section.Lines;
+                bool restyle = false;
                 while (_rows.Count < lines.Count)
                 {
-                    _rows.Add(new RowView(Root, _style, _rows.Count));
-                    _scale = -1f;
+                    _rows.Add(new RowView(_body, _style, _rows.Count));
+                    restyle = true;
                 }
 
                 while (_rows.Count > lines.Count)
                 {
                     RowView last = _rows[_rows.Count - 1];
                     _rows.RemoveAt(_rows.Count - 1);
-                    UnityEngine.Object.DestroyImmediate(last.Root);
+                    last.Destroy();
                 }
 
-                if (!Mathf.Approximately(_scale, section.Scale))
+                // A panel without background is drawn like plain text, apart from its title.
+                bool isPanel = section.Style == HudSectionStyle.Panel;
+                float opacity = isPanel ? section.BackgroundOpacity : 0f;
+                string title = isPanel ? section.Title : null;
+                bool hasTitle = !string.IsNullOrEmpty(title);
+                if (restyle || hasTitle != _hasTitle || !Mathf.Approximately(_scale, section.Scale) || !Mathf.Approximately(_opacity, opacity))
                 {
                     _scale = section.Scale;
-                    foreach (RowView row in _rows)
-                    {
-                        row.SetScale(_scale);
-                    }
+                    _opacity = opacity;
+                    _hasTitle = hasTitle;
+                    SetStyle();
                 }
 
+                SetText(_title, title);
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    _rows[i].Apply(lines[i], arrowSprite);
+                    HudLine line = lines[i];
+                    _rows[i].Apply(line, arrowSprite, opacity > 0f && line.StartsGroup && i > 0);
                 }
             }
 
@@ -522,15 +642,56 @@ namespace QoLChanges.UI
                     UnityEngine.Object.DestroyImmediate(Root.gameObject);
                 }
             }
+
+            private void SetStyle()
+            {
+                float scale = _scale;
+                bool background = _opacity > 0f;
+                HudPanelView.SetActive(_title.gameObject, _hasTitle);
+                _title.fontSize = Mathf.Max(1, Mathf.RoundToInt(TitleFontSize * scale));
+                _titleLayout.minHeight = TitleHeight * scale;
+
+                _background.enabled = background;
+                _shadow.enabled = background;
+                if (background)
+                {
+                    // Borders of the sliced sprites grow with the HUD size.
+                    _background.sprite = HudSprites.Panel;
+                    _background.pixelsPerUnitMultiplier = 1f / scale;
+                    _background.color = new Color(1f, 1f, 1f, _opacity);
+                    _shadow.sprite = HudSprites.Shadow;
+                    _shadow.pixelsPerUnitMultiplier = 1f / scale;
+                    _shadow.color = new Color(1f, 1f, 1f, _opacity * ShadowOpacity);
+                    RectTransform shadowRect = _shadow.rectTransform;
+                    shadowRect.offsetMin = (ShadowOffset - new Vector2(ShadowSpread, ShadowSpread)) * scale;
+                    shadowRect.offsetMax = (ShadowOffset + new Vector2(ShadowSpread, ShadowSpread)) * scale;
+                }
+
+                int sides = background ? Mathf.RoundToInt(PanelPaddingX * scale) : 0;
+                int top = background ? Mathf.RoundToInt((_hasTitle ? PanelPaddingTitle : PanelPaddingBottom) * scale) : 0;
+                int bottom = background ? Mathf.RoundToInt(PanelPaddingBottom * scale) : 0;
+                RectOffset padding = _bodyLayout.padding;
+                if (padding.left != sides || padding.right != sides || padding.top != top || padding.bottom != bottom)
+                {
+                    _bodyLayout.padding = new RectOffset(sides, sides, top, bottom);
+                }
+
+                foreach (RowView row in _rows)
+                {
+                    row.SetStyle(scale, _opacity);
+                }
+            }
         }
 
         private sealed class RowView
         {
             private readonly TextStyle _style;
+            private readonly GameObject _divider;
+            private readonly LayoutElement _dividerLayout;
+            private readonly Image _dividerLine;
             private readonly LayoutElement _rowLayout;
             private readonly HorizontalLayoutGroup _layout;
-            private readonly Image _icon;
-            private readonly LayoutElement _iconLayout;
+            private readonly SlotIcon _icon;
             private readonly Text _text;
             private readonly GameObject _segmentHolder;
             private readonly HorizontalLayoutGroup _segmentLayout;
@@ -539,16 +700,30 @@ namespace QoLChanges.UI
             private readonly LayoutElement _arrowLayout;
             private readonly Image _arrow;
             private float _scale = 1f;
+            private float _opacity;
 
             public RowView(Transform section, TextStyle style, int index)
             {
                 _style = style;
+
+                // Above the line, across the whole section.
+                _divider = CreateChild(section, "Divider_" + index);
+                _dividerLayout = _divider.AddComponent<LayoutElement>();
+                _dividerLayout.flexibleWidth = 1f;
+                GameObject line = CreateChild(_divider.transform, "Line");
+                RectTransform lineRect = (RectTransform)line.transform;
+                lineRect.anchorMin = new Vector2(0f, 0.5f);
+                lineRect.anchorMax = new Vector2(1f, 0.5f);
+                _dividerLine = line.AddComponent<Image>();
+                _dividerLine.raycastTarget = false;
+                _divider.SetActive(false);
+
                 Root = CreateChild(section, "Line_" + index);
                 _layout = Root.AddComponent<HorizontalLayoutGroup>();
                 ConfigureStack(_layout, BaseSpacing);
                 _rowLayout = Root.AddComponent<LayoutElement>();
 
-                _icon = CreateIcon(Root.transform, out _iconLayout);
+                _icon = new SlotIcon(Root.transform);
                 _text = CreateText(Root.transform, style);
 
                 _segmentHolder = CreateChild(Root.transform, "Segments");
@@ -573,28 +748,39 @@ namespace QoLChanges.UI
 
             public GameObject Root { get; }
 
-            public void SetScale(float scale)
+            /// <summary><paramref name="opacity"/> above 0 draws slots behind the icons and allows dividers.</summary>
+            public void SetStyle(float scale, float opacity)
             {
                 _scale = scale;
-                float rowHeight = BaseRowHeight * scale;
-                _rowLayout.minHeight = rowHeight;
+                _opacity = opacity;
+                _rowLayout.minHeight = BaseRowHeight * scale;
                 _layout.spacing = BaseSpacing * scale;
                 _segmentLayout.spacing = BaseSegmentSpacing * scale;
 
-                float iconSize = BaseIconSize * scale;
-                SetSize(_iconLayout, iconSize);
+                _icon.SetStyle(BaseIconSize * scale, IconInset * scale, opacity);
                 SetSize(_arrowLayout, BaseArrowSize * scale);
-                _text.fontSize = FontSize(scale);
+                _text.fontSize = FontSize(BaseFontSize, scale);
+
+                _dividerLayout.minHeight = DividerHeight * scale;
+                _dividerLayout.preferredHeight = DividerHeight * scale;
+                _dividerLine.rectTransform.sizeDelta = new Vector2(0f, DividerThickness * scale);
+                Sprite dividerSprite = opacity > 0f ? HudSprites.Divider : null;
+                _dividerLine.sprite = dividerSprite;
+                _dividerLine.type = Image.Type.Sliced;
+                _dividerLine.color = dividerSprite != null
+                    ? new Color(1f, 1f, 1f, opacity)
+                    : new Color(TitleColor.r, TitleColor.g, TitleColor.b, 0.5f * opacity);
+
                 foreach (SegmentView segment in _segments)
                 {
-                    segment.SetScale(scale);
+                    segment.SetStyle(scale, opacity);
                 }
             }
 
-            public void Apply(HudLine line, Sprite arrowSprite)
+            public void Apply(HudLine line, Sprite arrowSprite, bool showDivider)
             {
-                // A line without an icon keeps the space, so the texts stay aligned.
-                SetIcon(_icon, line.Icon);
+                SetActive(_divider, showDivider);
+                _icon.Apply(line.Icon);
 
                 // An empty text is left out of the layout, so segments start where the text would.
                 string text = line.Text ?? string.Empty;
@@ -617,12 +803,18 @@ namespace QoLChanges.UI
                 }
             }
 
+            public void Destroy()
+            {
+                UnityEngine.Object.DestroyImmediate(_divider);
+                UnityEngine.Object.DestroyImmediate(Root);
+            }
+
             private void ApplySegments(List<HudSegment> segments)
             {
                 while (_segments.Count < segments.Count)
                 {
                     SegmentView view = new SegmentView(_segmentHolder.transform, _style, _segments.Count);
-                    view.SetScale(_scale);
+                    view.SetStyle(_scale, _opacity);
                     _segments.Add(view);
                 }
 
@@ -645,8 +837,7 @@ namespace QoLChanges.UI
         private sealed class SegmentView
         {
             private readonly HorizontalLayoutGroup _layout;
-            private readonly Image _icon;
-            private readonly LayoutElement _iconLayout;
+            private readonly SlotIcon _icon;
             private readonly Text _text;
 
             public SegmentView(Transform holder, TextStyle style, int index)
@@ -654,29 +845,30 @@ namespace QoLChanges.UI
                 Root = CreateChild(holder, "Segment_" + index);
                 _layout = Root.AddComponent<HorizontalLayoutGroup>();
                 ConfigureStack(_layout, BaseSegmentInnerSpacing);
-                _icon = CreateIcon(Root.transform, out _iconLayout);
+                _icon = new SlotIcon(Root.transform);
                 _text = CreateText(Root.transform, style);
             }
 
             public GameObject Root { get; }
 
-            public void SetScale(float scale)
+            /// <summary>On a panel the text is smaller and the icon sits on a slot.</summary>
+            public void SetStyle(float scale, float opacity)
             {
                 _layout.spacing = BaseSegmentInnerSpacing * scale;
-                SetSize(_iconLayout, BaseSegmentIconSize * scale);
-                _text.fontSize = FontSize(scale);
+                _icon.SetStyle(BaseSegmentIconSize * scale, SegmentIconInset * scale, opacity);
+                _text.fontSize = FontSize(opacity > 0f ? PanelSegmentFontSize : BaseFontSize, scale);
             }
 
             public void Apply(HudSegment segment)
             {
-                SetIcon(_icon, segment.Icon);
+                _icon.Apply(segment.Icon);
                 SetText(_text, segment.Text);
             }
         }
 
-        private static int FontSize(float scale)
+        private static int FontSize(int size, float scale)
         {
-            return Mathf.Max(1, Mathf.RoundToInt(BaseFontSize * scale));
+            return Mathf.Max(1, Mathf.RoundToInt(size * scale));
         }
     }
 }
