@@ -22,6 +22,9 @@ namespace QoLChanges.UI
         private const int BaseFontSize = 22;
         private const float BaseArrowSize = 22f;
         private const float BaseSpacing = 6f;
+        private const float BaseSegmentIconSize = 28f;
+        private const float BaseSegmentSpacing = 14f;
+        private const float BaseSegmentInnerSpacing = 3f;
         private const float SectionSpacing = 6f;
         private const float GapAboveBars = 12f;
 
@@ -316,6 +319,79 @@ namespace QoLChanges.UI
             return child;
         }
 
+        private static Image CreateIcon(Transform parent, out LayoutElement layout)
+        {
+            GameObject icon = CreateChild(parent, "Icon");
+            Image image = icon.AddComponent<Image>();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            layout = icon.AddComponent<LayoutElement>();
+            return image;
+        }
+
+        private static Text CreateText(Transform parent, TextStyle style)
+        {
+            GameObject textObject = CreateChild(parent, "Text");
+            Text text = textObject.AddComponent<Text>();
+            text.font = style.Font;
+            text.fontStyle = style.FontStyle;
+            text.color = Color.white;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.supportRichText = true;
+            text.raycastTarget = false;
+            if (style.HasShadow)
+            {
+                Shadow shadow = textObject.AddComponent<Shadow>();
+                shadow.effectColor = style.ShadowColor;
+                shadow.effectDistance = style.ShadowDistance;
+            }
+
+            return text;
+        }
+
+        private static void SetIcon(Image image, Sprite sprite)
+        {
+            if (image.sprite != sprite)
+            {
+                image.sprite = sprite;
+            }
+
+            bool hasIcon = sprite != null;
+            if (image.enabled != hasIcon)
+            {
+                image.enabled = hasIcon;
+            }
+        }
+
+        private static void SetText(Text text, string value)
+        {
+            value = value ?? string.Empty;
+            if (text.text != value)
+            {
+                text.text = value;
+            }
+        }
+
+        private static void SetSize(LayoutElement element, float size)
+        {
+            element.minWidth = size;
+            element.minHeight = size;
+            element.preferredWidth = size;
+            element.preferredHeight = size;
+            element.flexibleWidth = 0f;
+            element.flexibleHeight = 0f;
+        }
+
+        private static void SetActive(GameObject gameObject, bool active)
+        {
+            if (gameObject.activeSelf != active)
+            {
+                gameObject.SetActive(active);
+            }
+        }
+
         private sealed class TextStyle
         {
             public Font Font;
@@ -391,44 +467,35 @@ namespace QoLChanges.UI
 
         private sealed class RowView
         {
+            private readonly TextStyle _style;
             private readonly LayoutElement _rowLayout;
             private readonly HorizontalLayoutGroup _layout;
             private readonly Image _icon;
             private readonly LayoutElement _iconLayout;
             private readonly Text _text;
+            private readonly GameObject _segmentHolder;
+            private readonly HorizontalLayoutGroup _segmentLayout;
+            private readonly List<SegmentView> _segments = new List<SegmentView>();
             private readonly GameObject _arrowHolder;
             private readonly LayoutElement _arrowLayout;
             private readonly Image _arrow;
+            private float _scale = 1f;
 
             public RowView(Transform section, TextStyle style, int index)
             {
+                _style = style;
                 Root = CreateChild(section, "Line_" + index);
                 _layout = Root.AddComponent<HorizontalLayoutGroup>();
                 ConfigureStack(_layout, BaseSpacing);
                 _rowLayout = Root.AddComponent<LayoutElement>();
 
-                GameObject icon = CreateChild(Root.transform, "Icon");
-                _icon = icon.AddComponent<Image>();
-                _icon.preserveAspect = true;
-                _icon.raycastTarget = false;
-                _iconLayout = icon.AddComponent<LayoutElement>();
+                _icon = CreateIcon(Root.transform, out _iconLayout);
+                _text = CreateText(Root.transform, style);
 
-                GameObject text = CreateChild(Root.transform, "Text");
-                _text = text.AddComponent<Text>();
-                _text.font = style.Font;
-                _text.fontStyle = style.FontStyle;
-                _text.color = Color.white;
-                _text.alignment = TextAnchor.MiddleLeft;
-                _text.horizontalOverflow = HorizontalWrapMode.Overflow;
-                _text.verticalOverflow = VerticalWrapMode.Overflow;
-                _text.supportRichText = true;
-                _text.raycastTarget = false;
-                if (style.HasShadow)
-                {
-                    Shadow shadow = text.AddComponent<Shadow>();
-                    shadow.effectColor = style.ShadowColor;
-                    shadow.effectDistance = style.ShadowDistance;
-                }
+                _segmentHolder = CreateChild(Root.transform, "Segments");
+                _segmentLayout = _segmentHolder.AddComponent<HorizontalLayoutGroup>();
+                ConfigureStack(_segmentLayout, BaseSegmentSpacing);
+                _segmentHolder.SetActive(false);
 
                 // The holder takes part in the layout; the arrow inside it is free to rotate.
                 _arrowHolder = CreateChild(Root.transform, "ArrowHolder");
@@ -449,42 +516,36 @@ namespace QoLChanges.UI
 
             public void SetScale(float scale)
             {
+                _scale = scale;
                 float rowHeight = BaseRowHeight * scale;
                 _rowLayout.minHeight = rowHeight;
                 _layout.spacing = BaseSpacing * scale;
+                _segmentLayout.spacing = BaseSegmentSpacing * scale;
 
                 float iconSize = BaseIconSize * scale;
                 SetSize(_iconLayout, iconSize);
                 SetSize(_arrowLayout, BaseArrowSize * scale);
-                _text.fontSize = Mathf.Max(1, Mathf.RoundToInt(BaseFontSize * scale));
+                _text.fontSize = FontSize(scale);
+                foreach (SegmentView segment in _segments)
+                {
+                    segment.SetScale(scale);
+                }
             }
 
             public void Apply(HudLine line, Sprite arrowSprite)
             {
-                if (_icon.sprite != line.Icon)
-                {
-                    _icon.sprite = line.Icon;
-                }
-
                 // A line without an icon keeps the space, so the texts stay aligned.
-                bool hasIcon = line.Icon != null;
-                if (_icon.enabled != hasIcon)
-                {
-                    _icon.enabled = hasIcon;
-                }
+                SetIcon(_icon, line.Icon);
 
+                // An empty text is left out of the layout, so segments start where the text would.
                 string text = line.Text ?? string.Empty;
-                if (_text.text != text)
-                {
-                    _text.text = text;
-                }
+                SetText(_text, text);
+                SetActive(_text.gameObject, text.Length > 0);
+
+                ApplySegments(line.Segments);
 
                 bool showArrow = line.ArrowAngle.HasValue && arrowSprite != null;
-                if (_arrowHolder.activeSelf != showArrow)
-                {
-                    _arrowHolder.SetActive(showArrow);
-                }
-
+                SetActive(_arrowHolder, showArrow);
                 if (showArrow)
                 {
                     if (_arrow.sprite != arrowSprite)
@@ -497,15 +558,66 @@ namespace QoLChanges.UI
                 }
             }
 
-            private static void SetSize(LayoutElement element, float size)
+            private void ApplySegments(List<HudSegment> segments)
             {
-                element.minWidth = size;
-                element.minHeight = size;
-                element.preferredWidth = size;
-                element.preferredHeight = size;
-                element.flexibleWidth = 0f;
-                element.flexibleHeight = 0f;
+                while (_segments.Count < segments.Count)
+                {
+                    SegmentView view = new SegmentView(_segmentHolder.transform, _style, _segments.Count);
+                    view.SetScale(_scale);
+                    _segments.Add(view);
+                }
+
+                while (_segments.Count > segments.Count)
+                {
+                    SegmentView last = _segments[_segments.Count - 1];
+                    _segments.RemoveAt(_segments.Count - 1);
+                    UnityEngine.Object.DestroyImmediate(last.Root);
+                }
+
+                for (int i = 0; i < segments.Count; i++)
+                {
+                    _segments[i].Apply(segments[i]);
+                }
+
+                SetActive(_segmentHolder, segments.Count > 0);
             }
+        }
+
+        private sealed class SegmentView
+        {
+            private readonly HorizontalLayoutGroup _layout;
+            private readonly Image _icon;
+            private readonly LayoutElement _iconLayout;
+            private readonly Text _text;
+
+            public SegmentView(Transform holder, TextStyle style, int index)
+            {
+                Root = CreateChild(holder, "Segment_" + index);
+                _layout = Root.AddComponent<HorizontalLayoutGroup>();
+                ConfigureStack(_layout, BaseSegmentInnerSpacing);
+                _icon = CreateIcon(Root.transform, out _iconLayout);
+                _text = CreateText(Root.transform, style);
+            }
+
+            public GameObject Root { get; }
+
+            public void SetScale(float scale)
+            {
+                _layout.spacing = BaseSegmentInnerSpacing * scale;
+                SetSize(_iconLayout, BaseSegmentIconSize * scale);
+                _text.fontSize = FontSize(scale);
+            }
+
+            public void Apply(HudSegment segment)
+            {
+                SetIcon(_icon, segment.Icon);
+                SetText(_text, segment.Text);
+            }
+        }
+
+        private static int FontSize(float scale)
+        {
+            return Mathf.Max(1, Mathf.RoundToInt(BaseFontSize * scale));
         }
     }
 }

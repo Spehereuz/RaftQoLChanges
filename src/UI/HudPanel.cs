@@ -4,7 +4,10 @@ using UnityEngine;
 
 namespace QoLChanges.UI
 {
-    /// <summary>One line of a HUD section: an item icon, rich text and an optional direction arrow.</summary>
+    /// <summary>
+    /// One line of a HUD section: an item icon, rich text, segments of smaller item icons with their own text and an
+    /// optional direction arrow.
+    /// </summary>
     internal sealed class HudLine
     {
         public Sprite Icon { get; set; }
@@ -13,6 +16,37 @@ namespace QoLChanges.UI
 
         /// <summary>Clockwise angle of the arrow from screen up, in degrees; null hides the arrow.</summary>
         public float? ArrowAngle { get; set; }
+
+        /// <summary>Drawn after the text, left to right.</summary>
+        public List<HudSegment> Segments { get; } = new List<HudSegment>();
+
+        /// <summary>Segment <paramref name="index"/>, created with the segments before it when missing.</summary>
+        public HudSegment GetSegment(int index)
+        {
+            while (Segments.Count <= index)
+            {
+                Segments.Add(new HudSegment());
+            }
+
+            return Segments[index];
+        }
+
+        /// <summary>Removes the segments after the first <paramref name="count"/>.</summary>
+        public void TrimSegments(int count)
+        {
+            if (Segments.Count > count)
+            {
+                Segments.RemoveRange(count, Segments.Count - count);
+            }
+        }
+    }
+
+    /// <summary>A small item icon followed by rich text, such as one ingredient of a recipe.</summary>
+    internal sealed class HudSegment
+    {
+        public Sprite Icon { get; set; }
+
+        public string Text { get; set; }
     }
 
     /// <summary>
