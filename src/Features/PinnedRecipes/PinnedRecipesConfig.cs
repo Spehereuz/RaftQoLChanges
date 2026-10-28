@@ -24,6 +24,7 @@ namespace QoLChanges.Features.PinnedRecipes
         public const int MinScale = 75;
         public const int MaxScale = 150;
         public const int ScaleStep = 25;
+        public const int OpacityStep = 10;
 
         /// <summary>Unique names of the pinned items, in the order they were pinned; at most <see cref="MaxPinned"/>.</summary>
         public List<string> recipes = new List<string>();
@@ -39,6 +40,12 @@ namespace QoLChanges.Features.PinnedRecipes
 
         /// <summary>A pinned recipe is unpinned after it has been crafted once.</summary>
         public bool unpinAfterCrafting;
+
+        /// <summary>"PINNED RECIPES" above the recipes.</summary>
+        public bool showTitle = true;
+
+        /// <summary>Opacity of the panel behind the recipes in percent, 0-100 in steps of 10; 0 shows only the text.</summary>
+        public int backgroundOpacity = 80;
 
         /// <summary>Size of the HUD lines in percent: 75, 100, 125 or 150.</summary>
         public int scale = 100;
@@ -66,6 +73,8 @@ namespace QoLChanges.Features.PinnedRecipes
 
             int steps = Mathf.RoundToInt((float)Mathf.Clamp(scale, MinScale, MaxScale) / ScaleStep);
             scale = steps * ScaleStep;
+
+            backgroundOpacity = Mathf.RoundToInt((float)Mathf.Clamp(backgroundOpacity, 0, 100) / OpacityStep) * OpacityStep;
         }
     }
 }

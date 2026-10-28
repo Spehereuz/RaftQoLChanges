@@ -16,6 +16,7 @@ namespace QoLChanges.Features.PinnedRecipes
     {
         private const string HostName = "QoLChanges_PinnedRecipes";
         private const string SectionName = "PinnedRecipes";
+        private const string Title = "PINNED RECIPES";
 
         // In the bottom-left corner above the raft status, which stays next to the stat bars.
         private const int SectionOrder = 1;
@@ -42,6 +43,9 @@ namespace QoLChanges.Features.PinnedRecipes
             HudCorner corner = config.position == PinnedRecipesPosition.BottomLeft ? HudCorner.BottomLeft : HudCorner.TopRight;
             _instance._section = HudPanel.AddSection(SectionName, SectionOrder, corner);
             _instance._section.Scale = config.scale / 100f;
+            _instance._section.Style = HudSectionStyle.Panel;
+            _instance._section.Title = config.showTitle ? Title : null;
+            _instance._section.BackgroundOpacity = config.backgroundOpacity / 100f;
         }
 
         public static void Deactivate()
@@ -110,6 +114,7 @@ namespace QoLChanges.Features.PinnedRecipes
                 line.Icon = item.settings_Inventory != null ? item.settings_Inventory.Sprite : null;
                 line.Text = PinnedRecipesText.Recipe(item, crafts);
                 line.ArrowAngle = null;
+                line.StartsGroup = true;
                 line.TrimSegments(0);
 
                 if (_config.showIngredients && _ingredients.Count > 0)
@@ -118,6 +123,7 @@ namespace QoLChanges.Features.PinnedRecipes
                     ingredients.Icon = null;
                     ingredients.Text = null;
                     ingredients.ArrowAngle = null;
+                    ingredients.StartsGroup = false;
                     for (int i = 0; i < _ingredients.Count; i++)
                     {
                         HudSegment segment = ingredients.GetSegment(i);
