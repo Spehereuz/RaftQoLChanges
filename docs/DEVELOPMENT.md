@@ -59,7 +59,8 @@ QoLRuntime         owns ModConfig + FeatureManager; every change from the menu g
 ModConfig          root of config.json: master "enabled" + one section per feature + "menu" (UI/MenuConfig:
                    features expanded on the settings page)
 Core/
-  Feature          base class: id, display name, config, own Harmony instance, Enable/Disable/Reapply
+  Feature          base class: id, display name, config, own Harmony instance, Enable/Disable/Reapply;
+                   SaveConfig() saves a change the feature made itself (pinned recipes)
   FeatureConfig    base config section ("enabled"); override Normalize() to clamp values
   FeatureSetting   declarative options the settings page is generated from:
                    IntSliderSetting (slider), ToggleSetting (toggle), ChoiceSetting (dropdown, value = index)
@@ -70,14 +71,16 @@ Core/
                    progress (floor, at most 99% until done)
 Features/<Name>/   feature class, its config section, Harmony patch classes
 GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel),
-                   ItemNets (fill state of collection nets), Scarecrows (zones, parts, sitting seagulls)
+                   ItemNets (fill state of collection nets), Scarecrows (zones, parts, sitting seagulls),
+                   CraftingStock (items the crafting menu can take)
 UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
-                   one section per feature), StatusText (coloured rich-text values for hover info and the HUD),
+                   one section per feature; a line is an icon, text, item icon segments and an arrow), StatusText (coloured rich-text values for hover info and the HUD),
                    ToolDurabilityColor (red-yellow-green of tool bars for fuel and scarecrow parts)
 ```
 
 Settings always persist: every change made in the menu is written to `config.json` immediately and
-restored on the next load.
+restored on the next load. A feature that changes its own config during play (Pinned recipes) calls `SaveConfig()`,
+which normalizes the section and writes the file at once.
 
 ### Adding a feature
 
@@ -210,6 +213,17 @@ multiplayer, the host fills and sorts a storage and closes it; a second player w
 Then the second player with the mod sorts a storage as a client and closes it; the host opens it and sees the same order, also
 after saving and loading the world.
 
+Pinned recipes check: in Creative open the crafting menu, select the metal axe and press **Pin to HUD 0/3**: the button reads
+**Unpin** and the HUD shows `Metal axe  ×0` with its ingredients in red. `qoldev.give` the ingredients one by one and watch them turn
+white and the count grow; give enough for two axes: `×2`. Pin two more recipes (one with skins, one that crafts several items, one
+with an ingredient of several items if there is one): the button reads `Pin to HUD 2/3`, then `3/3 pinned` and is inactive on any
+other recipe. The lines follow the order of pinning and stay above the raft status lines while standing on the raft. Unpin the
+middle one. Open a storage with ingredients in it: the counts include it while it is open, like the crafting menu. Switch off
+**Show ingredients**, change **HUD size** and restart the game: the recipes and the settings stay; load another world: the same
+recipes are shown, except those not learned there. Switch on **Unpin after crafting** and craft a pinned recipe in a Normal world
+(or in Creative): it disappears from the HUD; crafting another skin of a pinned recipe keeps it. Switch the feature off: the HUD
+lines and the button disappear; on again: everything is back.
+
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
 `qoldev.dur.all random`, then compare the text with the bars; `qoldev.dur 1` and
@@ -264,6 +278,9 @@ _CanvasGame_New (CanvasHelper)
 
 - HUD lines use the font and shadow of the interaction prompt (`DisplayTextMiddle`) and centre their 32 px icons on the
   stat icons. Arrows use the sprite of the settings dropdown arrow, which points down.
+- A line can end with segments (`HudLine.Segments`): a 28 px item icon and a text each, 14 px apart. A line without an icon
+  keeps its space and a line with an empty text leaves the text out, so segments of such a line start under the text of the
+  line above it. Sections: Raft status (order 0, next to the bars), Pinned recipes (order 1).
 
 ### Item slots
 
@@ -443,6 +460,37 @@ _CanvasGame_New/InventoryParent (Inventory.Parent)
 - Display names are localised at runtime (`Settings` rewrites `settings_Inventory.DisplayName` when the language changes);
   the serialized value of some items is Swedish.
 
+## Crafting menu
+
+```
+_CanvasGame_New/.../Crafting (CraftingMenu, Canvas), top-left corner
+  CraftingBox_Category                  category buttons
+  CraftingBox_Selected Category         list of recipes (RecipeMenuItem / RecipeMenuSubItem)
+    SelectedItemBox                     (SelectedRecipeBox, LayoutElement) 254.8 wide, pivot (0.5, 1); its height is set
+                                        by RefreshLayout for every recipe
+      background                        stretched; its BrownBackground reaches about 8 px below the box
+        item_label, recipe_background/recipe_image/craft amount text
+        Description/Crafting/Costs      224 wide: Skin Grid Layout, item_description,
+          requires text                 "Requires:"
+            Craft button                (SelectedRecipeBox.craftButton) 103x46: Image, Button, ButtonSound, UiMagnet,
+                                        TextChangeButton; Text with Localize
+            ItemCostList                (CostCollection)
+      QoLChanges_PinRecipe              Pinned recipes: copy of the craft button, 224 wide, 14 px below the box
+```
+
+- `ComponentManager<CraftingMenu>.Value` is the keyboard and mouse menu (`ValueConsole` the gamepad one). `SelectedRecipeBox.ItemToCraft`
+  is the selected recipe or its selected skin (`settings_recipe.selectedSkin`); a skin is an item with its own `NewCost` and
+  `AmountToCraft`. `RecipeMenuItem.AttachRecipes` lists only recipes that `CanCraft` (`Learned`, `LearnedFromBeginning` or
+  `Cheat.UnlockAllCrafting`).
+- A cost is `CostMultiple[]`: every entry needs `amount` of any of its `items`, added up. The crafting menu counts
+  `PlayerInventory.GetItemCount` (all `allSlots`: hotbar, inventory, backpack) plus `secondInventory` (the open storage, or the
+  research table) and `CraftingMenu.CraftItem` removes the cost from both (`RemoveCostMultipleIncludeSecondaryInventories`),
+  then adds `AmountToCraft` items. No game code calls `CraftItem`: it runs from the click event of the craft button.
+- With `unlimitedResources` (Creative) `GetItemCount` returns `int.MaxValue`, cost boxes show `4/4` and nothing is removed.
+  `CraftingStock` counts the slots itself, so Pinned recipes shows real amounts there.
+- `TextChangeButton` sets the button text colour every frame from `Button.interactable`; `UiMagnet` belongs to the gamepad
+  cursor and is removed from the pin button.
+
 ## Using up items
 
 Tools, food and consumables leave the hotbar in different ways; Auto-replace patches each of them instead of watching
@@ -477,7 +525,7 @@ slots, so moving items by hand never looks like using them up.
 | Durability | `Item_Base.MaxUses`, `Item_Base.BarGradient`, `ItemInstance.Uses` / `NormalizedUses`, `Slot.IncrementUses()`; `settings_consumeable.FoodForm` (`Fluid` = drink, `Solid` = food) |
 | Inventory | `PlayerInventory` (`secondInventory`, `GetItemCount`, `RemoveCostMultiple*`, `GetSelectedHotbarSlot`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()`, `Hotbar` (`GetSelectedSlotIndex`, `ReselectCurrentSlot`) |
 | Storage | `Storage_Small.GetInventoryReference()`, `StorageManager` (`OpenStorage`, `CloseStorage`, `currentStorage`, static `allStorages`), `Inventory.Sort()`, `Inventory.SortPlayerInventoryIntoStorage()` |
-| Crafting | `CraftingMenu`, `CostCollection` |
+| Crafting | `CraftingMenu` (`selectedRecipeBox`, `CraftItem`), `SelectedRecipeBox` (`ItemToCraft`, `craftButton`), `ItemInstance_Recipe` (`NewCost`, `AmountToCraft`, `CanCraft`, `Skins`), `CostMultiple`, `CostCollection` |
 | Raft | `Raft` (`AnchorCount`, `remoteAnchors`), `Anchor_Stationary`, `Anchor_Throwable_Stand`, `EngineControls`, `MotorWheel` (`FuelTank`, `engineSwitchOn`, `rotatesForward`), `RaftVelocityManager`, `RaftWeightManager`, `Sail`, `SteeringWheel` |
 | World | `ItemCollector` (`maxNumberOfItems`, `collectedItems`), `ItemNet`, `Scarecrow` (`parts`, `invurnerable`, `Occupied`), `Seagull` (`searchScarecrowRadius`, `currentState`), `PlantManager.allCropplots`, `Plant`, `Cropplot` (`peckable`, `mainCollider`), `Battery`, `Tank`, `Electric_Purifier` |
 | Interaction | `Pickup.RaycastForRayInteractables`, `RaycastInteractable`, `IRaycastable.OnIsRayed`, `DisplayTextManager`, `Player.UseDistance` |

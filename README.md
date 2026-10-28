@@ -26,6 +26,7 @@ self-contained and can be switched on or off independently.
 | Full net indicator | `fullNet` | on | Collection nets glow red while they are full and catch nothing more. |
 | Scarecrow radius | `scarecrowRadius` | on, crop plots lit, 4 cm lines | While the hammer or a scarecrow is selected, outlines where scarecrows keep seagulls away and lights crop plots green inside and red outside of it. |
 | Storage sort | `storageSort` | on, by category | The sort button of a storage groups the items by category or puts them in alphabetical order instead of the game's order. |
+| Pinned recipes | `pinnedRecipes` | on, ingredients shown, 100% | Up to three recipes pinned from the crafting menu stay on the HUD with the amounts of their ingredients and how many times they can be crafted. |
 
 ### Durability indicator
 
@@ -216,6 +217,34 @@ Storage sort lets this button put the items in another order, chosen with **Sort
 - The storage is locked to you while it is open, and the game sends its slots to the host when you close it, the same way
   as after the vanilla sort. Other players do not need the mod.
 
+### Pinned recipes
+
+Select a recipe in the crafting menu and press **Pin to HUD** under its box to keep it on the screen while you gather the
+ingredients. Up to three recipes can be pinned; while three are pinned the button reads `3/3 pinned` and is inactive, and on a
+pinned recipe it reads **Unpin**. The recipes appear above the health, hunger and thirst bars (above the
+[Raft status HUD](#raft-status-hud)), in the order they were pinned:
+
+```
+[metal axe]  Metal axe  ×2
+             [plank] 12/4  [scrap] 3/6  [rope] 2/2
+```
+
+- `×2` is how many times the recipe can be crafted now, green; `×0` is red. A recipe that crafts several items at once still
+  counts crafts, not items.
+- Every ingredient shows the amount you have and the amount one craft needs, like the crafting menu; the amount you have is red
+  while it is not enough for one craft. An ingredient that accepts several items (any of them will do) adds them all up and
+  shows the icon of the one you have most of.
+- Items are counted where the crafting menu takes them from: the hotbar, the inventory and the backpack, plus the storage that is
+  open at the moment. Storages nearby are not counted yet.
+- A recipe with skins is pinned with the skin selected when you pin it, with that skin's icon and cost.
+- In Creative, where crafting costs nothing, the real amounts are still shown.
+- The pinned recipes are kept in the config and are the same in every world. A pinned recipe that is not learned in the current
+  world, or comes from a mod that is not loaded, stays pinned but is not shown.
+- **Show ingredients** switches the ingredient lines off, leaving the name and `×2`. **Unpin after crafting** (off by default)
+  unpins a recipe as soon as it has been crafted once with the craft button; crafting another skin of it keeps it pinned.
+  **HUD size** scales the lines from 75% to 150%.
+- Client-side and read-only: nothing is crafted, moved or sent. Other players do not need the mod.
+
 ### In-game menu
 
 Pause menu → **Mods** lists every mod known to RaftModLoader with its state. QoL Changes can be
@@ -234,7 +263,8 @@ Durability indicator, Hover info and Raft status HUD only add text to the game's
 disabled. Full net indicator removes the glow from every net when disabled. Scarecrow radius removes its lines and the
 light of crop plots as soon as the hammer or scarecrow is put away or the feature is disabled.
 Auto-replace tool only moves items that you could move by hand; disabling it changes nothing. Storage sort only changes
-the order of the sort button; disabled, the button sorts the vanilla way again.
+the order of the sort button; disabled, the button sorts the vanilla way again. Disabling Pinned recipes removes its HUD lines
+and the pin button; the pinned recipes stay in the config for the next time it is enabled.
 
 ## Configuration
 
@@ -298,6 +328,13 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
     "sortAfterStoring": false,
     "enabled": true
   },
+  "pinnedRecipes": {
+    "recipes": [],
+    "showIngredients": true,
+    "unpinAfterCrafting": false,
+    "scale": 100,
+    "enabled": true
+  },
   "menu": {
     "expandedFeatures": []
   }
@@ -309,7 +346,8 @@ The in-game menu is the intended way to change settings; when editing the file b
 the game is closed or reload the mod in the RML mod manager. `multiplier` is clamped to 1–5.
 Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`.
 The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. The scarecrow `lineWidth` is in centimetres,
-clamped to 2–10. The storage sort `order` is `Vanilla`, `ByCategory` or `Alphabetical`. `menu.expandedFeatures` lists
+clamped to 2–10. The storage sort `order` is `Vanilla`, `ByCategory` or `Alphabetical`. Pinned `recipes` are internal item names
+(`Axe`), at most three; the pinned recipes `scale` is rounded like the raft status one. `menu.expandedFeatures` lists
 the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
 
@@ -371,7 +409,7 @@ src/                 everything here is packed into the .rmod
                      settings, JSON config, logging
   Features/<Name>/   one folder per feature: feature class, config section, Harmony patches
   GameState/         game state read by several features (raft anchors, engines and fuel, collection nets,
-                     scarecrow zones)
+                     scarecrow zones, items available for crafting)
   UI/                pause menu "Mods" button and window; widgets are cloned from Raft's own
                      pause and settings menus at runtime, so no game assets are shipped; the
                      shared HUD panel above the stat bars
