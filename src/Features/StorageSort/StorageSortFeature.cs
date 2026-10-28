@@ -13,7 +13,7 @@ namespace QoLChanges.Features.StorageSort
         public const string FeatureId = "StorageSort";
 
         // Index = StorageSortOrder value.
-        private static readonly string[] OrderNames = { "Vanilla", "Alphabetical" };
+        private static readonly string[] OrderNames = { "Vanilla", "By category", "Alphabetical" };
 
         private readonly StorageSortConfig _config;
 

@@ -11,6 +11,9 @@ namespace QoLChanges.Features.StorageSort
         /// <summary>The game's own sort: stacks are merged and keep the order in which the items first appear.</summary>
         Vanilla,
 
+        /// <summary>By <see cref="StorageGroup"/>, then by English name.</summary>
+        ByCategory,
+
         /// <summary>By English name.</summary>
         Alphabetical,
     }
@@ -19,13 +22,13 @@ namespace QoLChanges.Features.StorageSort
     public sealed class StorageSortConfig : FeatureConfig
     {
         [JsonConverter(typeof(StringEnumConverter))]
-        public StorageSortOrder order = StorageSortOrder.Alphabetical;
+        public StorageSortOrder order = StorageSortOrder.ByCategory;
 
         public override void Normalize()
         {
             if (!Enum.IsDefined(typeof(StorageSortOrder), order))
             {
-                order = StorageSortOrder.Alphabetical;
+                order = StorageSortOrder.ByCategory;
             }
         }
     }

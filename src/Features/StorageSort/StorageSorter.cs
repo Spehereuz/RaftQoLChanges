@@ -20,6 +20,11 @@ namespace QoLChanges.Features.StorageSort
                 return false;
             }
 
+            if (order == StorageSortOrder.ByCategory)
+            {
+                StorageGroups.Prepare();
+            }
+
             List<Entry> entries = CollectEntries(slots);
             entries.Sort(new EntryComparer(order));
             Write(slots, entries);
@@ -249,7 +254,13 @@ namespace QoLChanges.Features.StorageSort
 
             private int CompareItems(Entry x, Entry y)
             {
-                int result = string.Compare(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase);
+                int result = _order == StorageSortOrder.ByCategory ? ((int)StorageGroups.Get(x.Item)).CompareTo((int)StorageGroups.Get(y.Item)) : 0;
+                if (result != 0)
+                {
+                    return result;
+                }
+
+                result = string.Compare(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase);
                 if (result != 0)
                 {
                     return result;

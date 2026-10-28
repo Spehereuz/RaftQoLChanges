@@ -13,11 +13,13 @@ namespace QoLChanges.Features.StorageSort
         {
             _config = config;
             _errorLogged = false;
+            StorageGroups.Reset();
         }
 
         public static void Deactivate()
         {
             _config = null;
+            StorageGroups.Reset();
         }
 
         /// <summary>Sorts a storage in the configured order. False lets the game sort it itself.</summary>
