@@ -23,15 +23,15 @@ namespace QoLChanges
             Config = JsonConfigFile.LoadOrCreate<ModConfig>(_configPath);
 
             Features = new FeatureManager();
-            Features.Register(new StackSizeFeature(Config.stackSize));
-            Features.Register(new DurabilityIndicatorFeature(Config.durabilityIndicator));
-            Features.Register(new HoverInfoFeature(Config.hoverInfo));
-            Features.Register(new AutoReplaceFeature(Config.autoReplace));
-            Features.Register(new RaftStatusFeature(Config.raftStatus));
-            Features.Register(new FullNetFeature(Config.fullNet));
-            Features.Register(new ScarecrowRadiusFeature(Config.scarecrowRadius));
-            Features.Register(new StorageSortFeature(Config.storageSort));
-            Features.Register(new PinnedRecipesFeature(Config.pinnedRecipes));
+            Register(new StackSizeFeature(Config.stackSize));
+            Register(new DurabilityIndicatorFeature(Config.durabilityIndicator));
+            Register(new HoverInfoFeature(Config.hoverInfo));
+            Register(new AutoReplaceFeature(Config.autoReplace));
+            Register(new RaftStatusFeature(Config.raftStatus));
+            Register(new FullNetFeature(Config.fullNet));
+            Register(new ScarecrowRadiusFeature(Config.scarecrowRadius));
+            Register(new StorageSortFeature(Config.storageSort));
+            Register(new PinnedRecipesFeature(Config.pinnedRecipes));
         }
 
         public ModConfig Config { get; }
@@ -116,6 +116,12 @@ namespace QoLChanges
             feature.Config.Normalize();
             feature.Reapply();
             Save();
+        }
+
+        private void Register(Feature feature)
+        {
+            feature.SetConfigSaver(Save);
+            Features.Register(feature);
         }
 
         private void Save()

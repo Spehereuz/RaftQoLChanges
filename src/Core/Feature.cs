@@ -11,6 +11,7 @@ namespace QoLChanges.Core
     internal abstract class Feature
     {
         private readonly Harmony _harmony;
+        private Action _saveConfig;
 
         protected Feature(string id, string displayName, FeatureConfig config)
         {
@@ -84,6 +85,22 @@ namespace QoLChanges.Core
         public virtual IEnumerable<FeatureSetting> GetSettings()
         {
             yield break;
+        }
+
+        /// <summary>Set by the owner of the config; <see cref="SaveConfig"/> calls it.</summary>
+        public void SetConfigSaver(Action saveConfig)
+        {
+            _saveConfig = saveConfig;
+        }
+
+        /// <summary>Saves a change the feature made to its own config outside the settings menu.</summary>
+        protected void SaveConfig()
+        {
+            Config.Normalize();
+            if (_saveConfig != null)
+            {
+                _saveConfig();
+            }
         }
 
         protected void Patch(Type patchClass)
