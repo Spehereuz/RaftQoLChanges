@@ -72,9 +72,11 @@ Core/
 Features/<Name>/   feature class, its config section, Harmony patch classes
 GameState/         read-only views of game state shared by features: RaftAnchors, RaftEngines (engines, power, fuel),
                    ItemNets (fill state of collection nets), Scarecrows (zones, parts, sitting seagulls),
-                   CraftingStock (items the crafting menu can take)
-UI/                pause menu "Mods" button, window and pages; HudPanel (shared lines above the stat bars,
-                   one section per feature; a line is an icon, text, item icon segments and an arrow), StatusText (coloured rich-text values for hover info and the HUD),
+                   CraftingStock (items at hand for the crafting menu and in every other storage)
+UI/                pause menu "Mods" button, window and pages; HudPanel (shared HUD panels in the bottom-left and
+                   top-right corners, one section per feature; a line is an icon, text, item icon segments and an
+                   arrow; a section is plain text or a wooden panel), HudSprites (panel, shadow, slot and divider
+                   sprites), StatusText (coloured rich-text values for hover info and the HUD),
                    ToolDurabilityColor (red-yellow-green of tool bars for fuel and scarecrow parts)
 ```
 
@@ -213,16 +215,23 @@ multiplayer, the host fills and sorts a storage and closes it; a second player w
 Then the second player with the mod sorts a storage as a client and closes it; the host opens it and sees the same order, also
 after saving and loading the world.
 
-Pinned recipes check: in Creative open the crafting menu, select the metal axe and press **Pin to HUD 0/3**: the button reads
-**Unpin** and the HUD shows `Metal axe  ×0` with its ingredients in red. `qoldev.give` the ingredients one by one and watch them turn
+Pinned recipes check: in Creative switch off **Count all storages**, open the crafting menu, select the metal axe and press
+**Pin to HUD 0/3**: the button reads **Unpin** and the panel in the top-right corner shows `Metal axe  ×0` with its ingredients in
+red. `qoldev.give` the ingredients one by one and watch them turn
 white and the count grow; give enough for two axes: `×2`. Pin two more recipes (one with skins, one that crafts several items, one
 with an ingredient of several items if there is one): the button reads `Pin to HUD 2/3`, then `3/3 pinned` and is inactive on any
-other recipe. The lines follow the order of pinning and stay above the raft status lines while standing on the raft. Unpin the
-middle one. Open a storage with ingredients in it: the counts include it while it is open, like the crafting menu. Switch off
-**Show ingredients**, change **HUD size** and restart the game: the recipes and the settings stay; load another world: the same
+other recipe. The recipes follow the order of pinning, separated by dividers. Unpin the middle one. Open a storage with ingredients
+in it: the counts include it while it is open, like the crafting menu, and the storage window is drawn over the panel. Switch on
+**Count all storages**: with the storage closed its items appear as blue `+N` and the crafts as `(×N)`; take some items out and the
+numbers move from `+N` to the amount at hand; empty it and the blue parts disappear. Items in the trash can are not counted. Wait
+for a research notification (or learn a blueprint): it slides in over the top of the panel and leaves it again. Switch **Position** to Bottom left: the panel
+moves above the health bar and stays above the raft status lines while standing on the raft. Set **Background opacity** to 0, 50
+and 100%: at 0 only the text remains, as plain lines; switch off **Show title**; change **HUD size**: borders, slots and dividers
+grow with it. Switch off **Show ingredients**, restart the game: the recipes and the settings stay; load another world: the same
 recipes are shown, except those not learned there. Switch on **Unpin after crafting** and craft a pinned recipe in a Normal world
 (or in Creative): it disappears from the HUD; crafting another skin of a pinned recipe keeps it. Switch the feature off: the HUD
-lines and the button disappear; on again: everything is back.
+lines and the button disappear; on again: everything is back. In multiplayer a second player with the mod sees the items of the
+host's storages after the host has closed them.
 
 Durability indicator check: in Creative run `qoldev.give Axe`, `qoldev.give Canteen_Water`,
 `qoldev.give Cooked_Catfish`, `qoldev.give Flipper`, `qoldev.give HeadLight`, then
@@ -270,17 +279,30 @@ _CanvasGame_New (CanvasHelper)
   Stat sliders          CanvasHelper.StatSliderParent, bottom-left corner, 364x257
     Health (16, 43), HungerBar (16, 97), Thirst (16, 151): UISlider_Stat, 276x47, pivot (0, 0.5);
                         StatIconBG 43x47 at the left edge of each bar
-    QoLChanges_HudPanel  HudPanel: sections stacked upwards from 12 px above the highest bar
+    QoLChanges_HudPanel  HudPanel, bottom-left corner: sections stacked upwards from 12 px above the highest bar
+  QoLChanges_HudPanel_TopRight  HudPanel, top-right corner: anchored (1, 1) at (-16, -16), sections stacked downwards;
+                        right after Stat sliders, so InventoryParent and the other windows are drawn over it
+  VoiceOverlay          top right, 342x244: names of players talking in voice chat, up to 3 rows of 62 px
   BuffDisplayer         bottom centre above the hotbar
+  InventoryParent       Inventory_Player at (-193, 384) from the centre, 386 wide; storages (Inventory_Storage_*) and the
+                        research table to the right of it at (208, 345) / (209, 386), up to 389 / 435 wide
   InventoryPickup       bottom right, picked up items
-  Notification*         top right
+  NotificationManager   Notification_* 304x57, anchored top right at (167, -44): slide in from the right edge, about
+                        15-73 px below the top
 ```
 
 - HUD lines use the font and shadow of the interaction prompt (`DisplayTextMiddle`) and centre their 32 px icons on the
   stat icons. Arrows use the sprite of the settings dropdown arrow, which points down.
 - A line can end with segments (`HudLine.Segments`): a 28 px item icon and a text each, 14 px apart. A line without an icon
   keeps its space and a line with an empty text leaves the text out, so segments of such a line start under the text of the
-  line above it. Sections: Raft status (order 0, next to the bars), Pinned recipes (order 1).
+  line above it. Sections: Raft status (bottom left, order 0, next to the bars), Pinned recipes (top right or bottom left,
+  order 1); a lower order is closer to the corner.
+- `HudSectionStyle.Panel` draws a section on a 9-sliced rounded wooden panel (fill (92, 63, 38), rim (150, 108, 64), radius
+  10 px) with a soft shadow shifted by (3, -4), both drawn by `HudSprites` at runtime; padding 14 px, an optional title in
+  15 px beige, a divider (`DividerSmall` of the crafting menu) above every `HudLine.StartsGroup` line except the first, icons
+  inset on the slot background of the crafting menu (`ItemBG_wo_Frame`) and segment texts of 18 px. `BackgroundOpacity` fades
+  the panel, its shadow, dividers and slots; at 0 the section is laid out like plain text. The game's sprites are found by name
+  among the loaded sprites; without them icons have no slot and dividers are a plain line.
 
 ### Item slots
 
