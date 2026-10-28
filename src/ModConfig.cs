@@ -7,6 +7,7 @@ using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
+using QoLChanges.Features.StorageSort;
 using QoLChanges.UI;
 
 namespace QoLChanges
@@ -33,6 +34,8 @@ namespace QoLChanges
         public FullNetConfig fullNet = new FullNetConfig();
 
         public ScarecrowRadiusConfig scarecrowRadius = new ScarecrowRadiusConfig();
+
+        public StorageSortConfig storageSort = new StorageSortConfig();
 
         public MenuConfig menu = new MenuConfig();
 
@@ -73,6 +76,11 @@ namespace QoLChanges
                 scarecrowRadius = new ScarecrowRadiusConfig();
             }
 
+            if (storageSort == null)
+            {
+                storageSort = new StorageSortConfig();
+            }
+
             if (menu == null)
             {
                 menu = new MenuConfig();
@@ -85,6 +93,7 @@ namespace QoLChanges
             raftStatus.Normalize();
             fullNet.Normalize();
             scarecrowRadius.Normalize();
+            storageSort.Normalize();
             menu.Normalize();
         }
     }

@@ -7,6 +7,7 @@ using QoLChanges.Features.HoverInfo;
 using QoLChanges.Features.RaftStatus;
 using QoLChanges.Features.ScarecrowRadius;
 using QoLChanges.Features.StackSize;
+using QoLChanges.Features.StorageSort;
 
 namespace QoLChanges
 {
@@ -28,6 +29,7 @@ namespace QoLChanges
             Features.Register(new RaftStatusFeature(Config.raftStatus));
             Features.Register(new FullNetFeature(Config.fullNet));
             Features.Register(new ScarecrowRadiusFeature(Config.scarecrowRadius));
+            Features.Register(new StorageSortFeature(Config.storageSort));
         }
 
         public ModConfig Config { get; }
