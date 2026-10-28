@@ -17,7 +17,7 @@ namespace QoLChanges.Features.PinnedRecipes
         private const string HostName = "QoLChanges_PinnedRecipes";
         private const string SectionName = "PinnedRecipes";
 
-        // Above the raft status, which stays next to the stat bars.
+        // In the bottom-left corner above the raft status, which stays next to the stat bars.
         private const int SectionOrder = 1;
         private const float RefreshInterval = 0.1f;
 
@@ -39,7 +39,8 @@ namespace QoLChanges.Features.PinnedRecipes
             DontDestroyOnLoad(host);
             _instance = host.AddComponent<PinnedRecipesHud>();
             _instance._config = config;
-            _instance._section = HudPanel.AddSection(SectionName, SectionOrder);
+            HudCorner corner = config.position == PinnedRecipesPosition.BottomLeft ? HudCorner.BottomLeft : HudCorner.TopRight;
+            _instance._section = HudPanel.AddSection(SectionName, SectionOrder, corner);
             _instance._section.Scale = config.scale / 100f;
         }
 

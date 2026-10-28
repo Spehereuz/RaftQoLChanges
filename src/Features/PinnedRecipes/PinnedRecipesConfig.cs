@@ -1,10 +1,22 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using QoLChanges.Core;
 using UnityEngine;
 
 namespace QoLChanges.Features.PinnedRecipes
 {
+    /// <summary>Screen corner of the pinned recipes.</summary>
+    public enum PinnedRecipesPosition
+    {
+        /// <summary>Away from the crafting menu, which covers the bottom-left corner.</summary>
+        TopRight,
+
+        /// <summary>Above the health, hunger and thirst bars and the raft status.</summary>
+        BottomLeft,
+    }
+
     [Serializable]
     public sealed class PinnedRecipesConfig : FeatureConfig
     {
@@ -15,6 +27,9 @@ namespace QoLChanges.Features.PinnedRecipes
 
         /// <summary>Unique names of the pinned items, in the order they were pinned; at most <see cref="MaxPinned"/>.</summary>
         public List<string> recipes = new List<string>();
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public PinnedRecipesPosition position = PinnedRecipesPosition.TopRight;
 
         /// <summary>Items in every other storage of the world are shown next to those at hand.</summary>
         public bool countAllStorages = true;
@@ -43,6 +58,11 @@ namespace QoLChanges.Features.PinnedRecipes
             }
 
             recipes = unique;
+
+            if (!Enum.IsDefined(typeof(PinnedRecipesPosition), position))
+            {
+                position = PinnedRecipesPosition.TopRight;
+            }
 
             int steps = Mathf.RoundToInt((float)Mathf.Clamp(scale, MinScale, MaxScale) / ScaleStep);
             scale = steps * ScaleStep;

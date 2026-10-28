@@ -12,6 +12,9 @@ namespace QoLChanges.Features.PinnedRecipes
     {
         public const string FeatureId = "PinnedRecipes";
 
+        // Index = PinnedRecipesPosition value.
+        private static readonly string[] PositionNames = { "Top right", "Bottom left" };
+
         private readonly PinnedRecipesConfig _config;
 
         public PinnedRecipesFeature(PinnedRecipesConfig config)
@@ -22,6 +25,11 @@ namespace QoLChanges.Features.PinnedRecipes
 
         public override IEnumerable<FeatureSetting> GetSettings()
         {
+            yield return new ChoiceSetting(
+                "Position",
+                PositionNames,
+                () => (int)_config.position,
+                index => _config.position = (PinnedRecipesPosition)index);
             yield return new ToggleSetting("Count all storages", () => _config.countAllStorages, value => _config.countAllStorages = value);
             yield return new ToggleSetting("Show ingredients", () => _config.showIngredients, value => _config.showIngredients = value);
             yield return new ToggleSetting("Unpin after crafting", () => _config.unpinAfterCrafting, value => _config.unpinAfterCrafting = value);
