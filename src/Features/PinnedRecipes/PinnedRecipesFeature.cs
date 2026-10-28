@@ -4,8 +4,9 @@ using QoLChanges.Core;
 namespace QoLChanges.Features.PinnedRecipes
 {
     /// <summary>
-    /// Up to three recipes on the HUD with the amounts of their ingredients and how many times they can be crafted.
-    /// Client-side and read-only: the items are counted the way the crafting menu counts them.
+    /// Up to three recipes on the HUD with the amounts of their ingredients and how many times they can be crafted,
+    /// pinned with a button under the selected recipe of the crafting menu. Client-side and read-only: the items are
+    /// counted the way the crafting menu counts them and the pinned recipes are kept in the config.
     /// </summary>
     internal sealed class PinnedRecipesFeature : Feature
     {
@@ -33,12 +34,16 @@ namespace QoLChanges.Features.PinnedRecipes
 
         protected override void OnEnable()
         {
+            PinnedRecipesService.Activate(_config, SaveConfig);
             PinnedRecipesHud.Activate(_config);
+            PinButton.Activate();
         }
 
         protected override void OnDisable()
         {
+            PinButton.Deactivate();
             PinnedRecipesHud.Deactivate();
+            PinnedRecipesService.Deactivate();
         }
     }
 }

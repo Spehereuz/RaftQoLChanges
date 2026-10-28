@@ -12,6 +12,9 @@ namespace QoLChanges.UI
 
         private static Transform _stash;
 
+        /// <summary>True between <see cref="Initialize"/> and <see cref="Shutdown"/>: <see cref="Clone"/> can be used.</summary>
+        public static bool IsInitialized => _stash != null;
+
         /// <summary>Inactive holder: clones are created inside it so that no game script wakes up before it is stripped.</summary>
         public static void Initialize(Transform owner)
         {
