@@ -24,6 +24,9 @@ namespace QoLChanges.Features.StorageSort
         [JsonConverter(typeof(StringEnumConverter))]
         public StorageSortOrder order = StorageSortOrder.ByCategory;
 
+        /// <summary>Sorts the storage after the button that stores the matching items of the inventory in it.</summary>
+        public bool sortAfterStoring;
+
         public override void Normalize()
         {
             if (!Enum.IsDefined(typeof(StorageSortOrder), order))

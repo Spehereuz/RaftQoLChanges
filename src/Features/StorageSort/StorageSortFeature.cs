@@ -30,12 +30,14 @@ namespace QoLChanges.Features.StorageSort
                 OrderNames,
                 () => (int)_config.order,
                 index => _config.order = (StorageSortOrder)index);
+            yield return new ToggleSetting("Sort after storing", () => _config.sortAfterStoring, value => _config.sortAfterStoring = value);
         }
 
         protected override void OnEnable()
         {
             StorageSortService.Activate(_config);
             Patch(typeof(InventorySortPatch));
+            Patch(typeof(SortPlayerInventoryIntoStoragePatch));
         }
 
         protected override void OnDisable()

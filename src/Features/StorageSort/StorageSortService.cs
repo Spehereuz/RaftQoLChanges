@@ -36,13 +36,30 @@ namespace QoLChanges.Features.StorageSort
             }
             catch (Exception e)
             {
-                if (!_errorLogged)
-                {
-                    _errorLogged = true;
-                    ModLog.Error(StorageSortFeature.FeatureId + ": failed to sort a storage, the game sorted it instead.", e);
-                }
-
+                LogError("failed to sort a storage, the game sorted it instead.", e);
                 return false;
+            }
+        }
+
+        /// <summary>Sorts the storage like its sort button does when <see cref="StorageSortConfig.sortAfterStoring"/> is on.</summary>
+        public static void SortAfterStoring(Inventory inventory)
+        {
+            if (_config == null || !_config.sortAfterStoring)
+            {
+                return;
+            }
+
+            try
+            {
+                // The game stores items only while the storage is open by the local player.
+                if (inventory != null && inventory.secondInventory is PlayerInventory && IsStorage(inventory))
+                {
+                    inventory.Sort();
+                }
+            }
+            catch (Exception e)
+            {
+                LogError("failed to sort a storage after storing items.", e);
             }
         }
 
@@ -66,6 +83,15 @@ namespace QoLChanges.Features.StorageSort
             }
 
             return false;
+        }
+
+        private static void LogError(string message, Exception e)
+        {
+            if (!_errorLogged)
+            {
+                _errorLogged = true;
+                ModLog.Error(StorageSortFeature.FeatureId + ": " + message, e);
+            }
         }
     }
 }

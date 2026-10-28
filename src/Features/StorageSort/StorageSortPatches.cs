@@ -14,4 +14,15 @@ namespace QoLChanges.Features.StorageSort
             return !StorageSortService.TrySort(__instance);
         }
     }
+
+    // The button and the key that store the items of the inventory which the storage already holds.
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.SortPlayerInventoryIntoStorage))]
+    internal static class SortPlayerInventoryIntoStoragePatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(Inventory __instance)
+        {
+            StorageSortService.SortAfterStoring(__instance);
+        }
+    }
 }
