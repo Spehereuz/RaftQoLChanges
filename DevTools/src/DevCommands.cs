@@ -249,6 +249,22 @@ namespace QoLDevTools
             });
         }
 
+        [ConsoleCommand(
+            name: "qoldev.chest",
+            docs: "Empties the open storage and fills that many slots (default 3/4) with random items: part stacks, used tools and drinks, a stack above the stack size. Syntax: " + StorageFiller.Syntax)]
+        public static string FillStorage(string[] args)
+        {
+            return Run(() =>
+            {
+                if (!TryGetLocalPlayer(out Network_Player player, out string error))
+                {
+                    return error;
+                }
+
+                return StorageFiller.Fill(player, args);
+            });
+        }
+
         /// <summary>The last argument is the amount when it is a number; everything before it is the name.</summary>
         private static bool TryParseGiveArgs(string[] args, out string name, out int amount, out string error)
         {
