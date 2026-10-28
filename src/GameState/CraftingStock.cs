@@ -3,18 +3,23 @@ using System.Collections.Generic;
 namespace QoLChanges.GameState
 {
     /// <summary>
-    /// Amounts of the items the local player crafts with, read from the same inventories as the game's crafting menu:
-    /// the hotbar, the inventory and the backpack, plus the inventory the game crafts from while it is open next to them
-    /// (a storage). Unlike the game, which counts unlimited resources in Creative, the real amounts are counted.
+    /// Amounts of the items the local player crafts with. At hand are the inventories the game's crafting menu takes
+    /// items from: the hotbar, the inventory and the backpack, plus the inventory open next to them (a storage). Stored
+    /// are, on request, the items in every other storage of the world. Unlike the game, which counts unlimited resources
+    /// in Creative, the real amounts are counted.
     /// </summary>
     internal sealed class CraftingStock
     {
-        private readonly Dictionary<int, int> _counts = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _atHand = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _stored = new Dictionary<int, int>();
 
-        /// <summary>Counts the items again; false when there is no local player.</summary>
-        public bool Read()
+        /// <summary>
+        /// Counts the items again, those in the other storages only when <paramref name="includeStorages"/> is set; false
+        /// when there is no local player.
+        /// </summary>
+        public bool Read(bool includeStorages)
         {
-            _counts.Clear();
+            Clear();
 
             Network_Player player = ComponentManager<Network_Player>.Value;
             PlayerInventory inventory = player != null ? player.Inventory : null;
@@ -23,26 +28,63 @@ namespace QoLChanges.GameState
                 return false;
             }
 
-            Add(inventory);
-            if (inventory.secondInventory != null)
+            Inventory open = inventory.secondInventory;
+            Add(_atHand, inventory);
+            if (open != null)
             {
-                Add(inventory.secondInventory);
+                Add(_atHand, open);
+            }
+
+            if (includeStorages)
+            {
+                AddStorages(open);
             }
 
             return true;
         }
 
-        public int Count(Item_Base item)
+        /// <summary>Items the crafting menu can use right now.</summary>
+        public int AtHand(Item_Base item)
         {
-            return item != null && _counts.TryGetValue(item.UniqueIndex, out int count) ? count : 0;
+            return Get(_atHand, item);
+        }
+
+        /// <summary>Items in storages that are not open; zero unless storages were read.</summary>
+        public int Stored(Item_Base item)
+        {
+            return Get(_stored, item);
         }
 
         public void Clear()
         {
-            _counts.Clear();
+            _atHand.Clear();
+            _stored.Clear();
         }
 
-        private void Add(Inventory inventory)
+        /// <summary>
+        /// Every placed storage except the trash can and the one already counted as open. Other players' games keep the
+        /// contents of every storage: the game sends them on joining and after a storage is closed.
+        /// </summary>
+        private void AddStorages(Inventory open)
+        {
+            foreach (Storage_Small storage in StorageManager.allStorages)
+            {
+                Inventory inventory = storage != null ? storage.GetInventoryReference() : null;
+                if (inventory == null || inventory == open || inventory is Inventory_Trashcan)
+                {
+                    continue;
+                }
+
+                Add(_stored, inventory);
+            }
+        }
+
+        private static int Get(Dictionary<int, int> counts, Item_Base item)
+        {
+            return item != null && counts.TryGetValue(item.UniqueIndex, out int count) ? count : 0;
+        }
+
+        private static void Add(Dictionary<int, int> counts, Inventory inventory)
         {
             if (inventory.allSlots == null)
             {
@@ -57,8 +99,8 @@ namespace QoLChanges.GameState
                 }
 
                 int index = slot.itemInstance.baseItem.UniqueIndex;
-                _counts.TryGetValue(index, out int count);
-                _counts[index] = count + slot.itemInstance.Amount;
+                counts.TryGetValue(index, out int count);
+                counts[index] = count + slot.itemInstance.Amount;
             }
         }
     }

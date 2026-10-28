@@ -16,6 +16,9 @@ namespace QoLChanges.Features.PinnedRecipes
         /// <summary>Unique names of the pinned items, in the order they were pinned; at most <see cref="MaxPinned"/>.</summary>
         public List<string> recipes = new List<string>();
 
+        /// <summary>Items in every other storage of the world are shown next to those at hand.</summary>
+        public bool countAllStorages = true;
+
         /// <summary>A line with the ingredients under every recipe.</summary>
         public bool showIngredients = true;
 

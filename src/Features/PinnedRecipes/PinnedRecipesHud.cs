@@ -9,7 +9,8 @@ namespace QoLChanges.Features.PinnedRecipes
 {
     /// <summary>
     /// Fills the pinned recipes section of the HUD panel: every pinned recipe that is learned in the current world, how
-    /// many times it can be crafted and, below it, its ingredients. Read-only: nothing is changed or sent.
+    /// many times it can be crafted and, below it, its ingredients, with the items in storages when they are counted.
+    /// Read-only: nothing is changed or sent.
     /// </summary>
     internal sealed class PinnedRecipesHud : MonoBehaviour
     {
@@ -86,7 +87,7 @@ namespace QoLChanges.Features.PinnedRecipes
 
         private void Refresh()
         {
-            if (_config.recipes.Count == 0 || !_stock.Read())
+            if (_config.recipes.Count == 0 || !_stock.Read(_config.countAllStorages))
             {
                 _section.Visible = false;
                 return;
@@ -103,7 +104,7 @@ namespace QoLChanges.Features.PinnedRecipes
                     continue;
                 }
 
-                int? crafts = RecipeAvailability.Read(item, _stock, _ingredients);
+                RecipeCrafts crafts = RecipeAvailability.Read(item, _stock, _ingredients);
                 HudLine line = _section.GetLine(count++);
                 line.Icon = item.settings_Inventory != null ? item.settings_Inventory.Sprite : null;
                 line.Text = PinnedRecipesText.Recipe(item, crafts);

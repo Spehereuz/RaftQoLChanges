@@ -22,6 +22,7 @@ namespace QoLChanges.Features.PinnedRecipes
 
         public override IEnumerable<FeatureSetting> GetSettings()
         {
+            yield return new ToggleSetting("Count all storages", () => _config.countAllStorages, value => _config.countAllStorages = value);
             yield return new ToggleSetting("Show ingredients", () => _config.showIngredients, value => _config.showIngredients = value);
             yield return new ToggleSetting("Unpin after crafting", () => _config.unpinAfterCrafting, value => _config.unpinAfterCrafting = value);
             yield return new IntSliderSetting(
