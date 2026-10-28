@@ -8,9 +8,10 @@ using UnityEngine.UI;
 namespace QoLChanges.UI
 {
     /// <summary>
-    /// Draws the <see cref="HudPanel"/> sections inside the game HUD. The panel is a child of the stat bars' parent,
-    /// so it is hidden together with the rest of the HUD; it is created again after a world is loaded. Text uses the
-    /// font and shadow of the game's interaction prompt, arrows the sprite of the settings dropdowns.
+    /// Draws the <see cref="HudPanel"/> sections inside the game HUD, one panel per <see cref="HudCorner"/>. The panels
+    /// live in the HUD canvas, so they are hidden together with the rest of the HUD; they are created again after a world
+    /// is loaded. Text uses the font and shadow of the game's interaction prompt, arrows the sprite of the settings
+    /// dropdowns.
     /// </summary>
     internal sealed class HudPanelView : MonoBehaviour
     {
@@ -32,6 +33,9 @@ namespace QoLChanges.UI
         private const float StatIconCenterX = 21.5f;
         private static readonly Vector2 FallbackPosition = new Vector2(16f, 190f);
 
+        // As far from the top edge as from the right one; the game's notifications slide in over it for a few seconds.
+        private static readonly Vector2 TopRightOffset = new Vector2(-16f, -16f);
+
         private static readonly AccessTools.FieldRef<DisplayTextManager, DisplayText[]> DisplayTextsField =
             AccessTools.FieldRefAccess<DisplayTextManager, DisplayText[]>("displayTexts");
 
@@ -41,11 +45,14 @@ namespace QoLChanges.UI
         private static readonly AccessTools.FieldRef<GeneralSettingsBox, Dropdown> LanguageDropdownField =
             AccessTools.FieldRefAccess<GeneralSettingsBox, Dropdown>("dropdown_language");
 
+        private static readonly HudCorner[] Corners = { HudCorner.BottomLeft, HudCorner.TopRight };
+
         private readonly Dictionary<HudSection, SectionView> _views = new Dictionary<HudSection, SectionView>();
+        private readonly Dictionary<HudCorner, RectTransform> _panels = new Dictionary<HudCorner, RectTransform>();
+        private readonly List<HudSection> _cornerSections = new List<HudSection>();
 
         private CanvasHelper _canvas;
         private UISlider_Stat[] _statBars;
-        private RectTransform _panel;
         private TextStyle _textStyle;
         private Sprite _arrowSprite;
         private bool _arrowSearched;
@@ -64,7 +71,10 @@ namespace QoLChanges.UI
         {
             try
             {
-                Sync();
+                foreach (HudCorner corner in Corners)
+                {
+                    Sync(corner);
+                }
             }
             catch (Exception e)
             {
@@ -76,55 +86,54 @@ namespace QoLChanges.UI
             }
         }
 
-        /// <summary>The panel is removed with the HUD it lives in; this object only owns it while it exists.</summary>
+        /// <summary>The panels are removed with the HUD they live in; this object only owns them while they exist.</summary>
         private void OnDestroy()
         {
-            if (_panel != null)
-            {
-                DestroyImmediate(_panel.gameObject);
-            }
-
-            _panel = null;
+            DestroyPanels();
             _views.Clear();
         }
 
-        private void Sync()
+        /// <summary>Shows the sections of one corner; a lower order is closer to the corner.</summary>
+        private void Sync(HudCorner corner)
         {
-            IReadOnlyList<HudSection> sections = HudPanel.ActiveSections;
-            HudSection bottom = null;
-            foreach (HudSection section in sections)
+            _cornerSections.Clear();
+            bool anyShown = false;
+            foreach (HudSection section in HudPanel.ActiveSections)
             {
-                if (IsShown(section))
+                if (section.Corner == corner)
                 {
-                    bottom = section;
-                    break;
+                    _cornerSections.Add(section);
+                    anyShown |= IsShown(section);
                 }
             }
 
-            if (bottom == null)
+            _panels.TryGetValue(corner, out RectTransform panel);
+            if (!anyShown)
             {
-                if (_panel != null && _panel.gameObject.activeSelf)
+                if (panel != null && panel.gameObject.activeSelf)
                 {
-                    _panel.gameObject.SetActive(false);
+                    panel.gameObject.SetActive(false);
                 }
 
                 return;
             }
 
-            if (!EnsurePanel())
+            panel = EnsurePanel(corner);
+            if (panel == null)
             {
                 return;
             }
 
-            if (!_panel.gameObject.activeSelf)
+            if (!panel.gameObject.activeSelf)
             {
-                _panel.gameObject.SetActive(true);
+                panel.gameObject.SetActive(true);
             }
 
-            for (int i = 0; i < sections.Count; i++)
+            HudSection nearest = null;
+            for (int i = 0; i < _cornerSections.Count; i++)
             {
-                HudSection section = sections[i];
-                SectionView view = GetView(section);
+                HudSection section = _cornerSections[i];
+                SectionView view = GetView(section, panel);
                 bool shown = IsShown(section);
                 view.SetActive(shown);
                 if (!shown)
@@ -132,8 +141,13 @@ namespace QoLChanges.UI
                     continue;
                 }
 
-                // The layout runs top to bottom; the first section (lowest order) is the last child.
-                int siblingIndex = sections.Count - 1 - i;
+                if (nearest == null)
+                {
+                    nearest = section;
+                }
+
+                // The layout runs top to bottom: at the bottom the nearest section is the last child, at the top the first.
+                int siblingIndex = corner == HudCorner.BottomLeft ? _cornerSections.Count - 1 - i : i;
                 if (view.Root.GetSiblingIndex() != siblingIndex)
                 {
                     view.Root.SetSiblingIndex(siblingIndex);
@@ -142,7 +156,10 @@ namespace QoLChanges.UI
                 view.Apply(section, _arrowSprite);
             }
 
-            UpdatePosition(bottom.Scale);
+            if (corner == HudCorner.BottomLeft)
+            {
+                PlaceAboveBars(panel, nearest.Scale);
+            }
         }
 
         private static bool IsShown(HudSection section)
@@ -150,45 +167,39 @@ namespace QoLChanges.UI
             return section.Visible && section.Lines.Count > 0;
         }
 
-        private SectionView GetView(HudSection section)
+        private SectionView GetView(HudSection section, RectTransform panel)
         {
             if (!_views.TryGetValue(section, out SectionView view))
             {
-                view = new SectionView(_panel, _textStyle, section.Name);
+                view = new SectionView(panel, _textStyle, section.Name);
                 _views[section] = view;
             }
 
             return view;
         }
 
-        /// <summary>Creates the panel in the HUD of the current world; false while there is no world.</summary>
-        private bool EnsurePanel()
+        /// <summary>The panel of a corner in the HUD of the current world; null while there is no world.</summary>
+        private RectTransform EnsurePanel(HudCorner corner)
         {
             CanvasHelper canvas = ComponentManager<CanvasHelper>.Value;
             if (canvas == null || canvas.StatSliderParent == null)
             {
-                return false;
+                return null;
             }
 
-            if (_panel != null && _canvas == canvas)
+            if (_canvas != canvas)
             {
-                return true;
+                // Panels and views of the previous world were destroyed together with its HUD.
+                DestroyPanels();
+                _views.Clear();
+                _canvas = canvas;
+                _statBars = new[] { canvas.healthSlider, canvas.hungerSlider, canvas.thirstSlider };
+                _textStyle = null;
             }
 
-            if (_panel != null)
+            if (_textStyle == null && !TryGetTextStyle(canvas, out _textStyle))
             {
-                DestroyImmediate(_panel.gameObject);
-            }
-
-            // Views of the previous world were destroyed together with its HUD.
-            _views.Clear();
-            _panel = null;
-            _canvas = canvas;
-            _statBars = new[] { canvas.healthSlider, canvas.hungerSlider, canvas.thirstSlider };
-
-            if (!TryGetTextStyle(canvas, out _textStyle))
-            {
-                return false;
+                return null;
             }
 
             if (!_arrowSearched)
@@ -197,28 +208,76 @@ namespace QoLChanges.UI
                 _arrowSprite = FindArrowSprite();
             }
 
-            Transform parent = canvas.StatSliderParent.transform;
-            GameObject panelObject = new GameObject(PanelName, typeof(RectTransform));
+            if (_panels.TryGetValue(corner, out RectTransform panel) && panel != null)
+            {
+                return panel;
+            }
+
+            panel = corner == HudCorner.TopRight ? CreateTopRightPanel(canvas) : CreateBottomLeftPanel(canvas);
+            _panels[corner] = panel;
+            return panel;
+        }
+
+        /// <summary>Inside the stat bars' parent, moved above the highest bar every frame.</summary>
+        private static RectTransform CreateBottomLeftPanel(CanvasHelper canvas)
+        {
+            RectTransform panel = CreatePanel(canvas.StatSliderParent.transform, PanelName, TextAnchor.LowerLeft);
+            panel.anchorMin = Vector2.zero;
+            panel.anchorMax = Vector2.zero;
+            panel.pivot = Vector2.zero;
+            return panel;
+        }
+
+        /// <summary>
+        /// In the HUD canvas right after the stat bars, so the inventory, storages and other windows of the game are drawn
+        /// over it.
+        /// </summary>
+        private static RectTransform CreateTopRightPanel(CanvasHelper canvas)
+        {
+            Transform statBars = canvas.StatSliderParent.transform;
+            RectTransform panel = CreatePanel(statBars.parent, PanelName + "_TopRight", TextAnchor.UpperRight);
+            panel.SetSiblingIndex(statBars.GetSiblingIndex() + 1);
+            panel.anchorMin = Vector2.one;
+            panel.anchorMax = Vector2.one;
+            panel.pivot = Vector2.one;
+            panel.anchoredPosition = TopRightOffset;
+            return panel;
+        }
+
+        private static RectTransform CreatePanel(Transform parent, string name, TextAnchor alignment)
+        {
+            GameObject panelObject = new GameObject(name, typeof(RectTransform));
             panelObject.layer = parent.gameObject.layer;
-            _panel = (RectTransform)panelObject.transform;
-            _panel.SetParent(parent, false);
-            _panel.anchorMin = Vector2.zero;
-            _panel.anchorMax = Vector2.zero;
-            _panel.pivot = Vector2.zero;
+            RectTransform panel = (RectTransform)panelObject.transform;
+            panel.SetParent(parent, false);
 
             VerticalLayoutGroup layout = panelObject.AddComponent<VerticalLayoutGroup>();
             ConfigureStack(layout, SectionSpacing);
+            layout.childAlignment = alignment;
 
             ContentSizeFitter fitter = panelObject.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            return true;
+            return panel;
+        }
+
+        private void DestroyPanels()
+        {
+            foreach (RectTransform panel in _panels.Values)
+            {
+                if (panel != null)
+                {
+                    DestroyImmediate(panel.gameObject);
+                }
+            }
+
+            _panels.Clear();
         }
 
         /// <summary>Above the highest stat bar, icons centred on the stat icons.</summary>
-        private void UpdatePosition(float scale)
+        private void PlaceAboveBars(RectTransform panel, float scale)
         {
-            Transform parent = _panel.parent;
+            Transform parent = panel.parent;
             bool found = false;
             float top = float.MinValue;
             float left = float.MaxValue;
@@ -241,10 +300,10 @@ namespace QoLChanges.UI
                 ? new Vector2(left + StatIconCenterX - BaseIconSize * scale * 0.5f, top + GapAboveBars)
                 : FallbackPosition;
 
-            Vector3 current = _panel.localPosition;
+            Vector3 current = panel.localPosition;
             if (!Mathf.Approximately(current.x, target.x) || !Mathf.Approximately(current.y, target.y))
             {
-                _panel.localPosition = new Vector3(target.x, target.y, 0f);
+                panel.localPosition = new Vector3(target.x, target.y, 0f);
             }
         }
 

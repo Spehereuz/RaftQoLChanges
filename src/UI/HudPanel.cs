@@ -49,6 +49,16 @@ namespace QoLChanges.UI
         public string Text { get; set; }
     }
 
+    /// <summary>Screen corner a HUD section is shown in.</summary>
+    internal enum HudCorner
+    {
+        /// <summary>Above the health, hunger and thirst bars.</summary>
+        BottomLeft,
+
+        /// <summary>The game's notifications, the inventory and other windows of the game cover it.</summary>
+        TopRight,
+    }
+
     /// <summary>
     /// A block of lines owned by one feature. The owner changes the lines and the panel shows them on the next frame;
     /// lines are listed top to bottom.
@@ -60,16 +70,19 @@ namespace QoLChanges.UI
 
         private float _scale = 1f;
 
-        internal HudSection(string name, int order)
+        internal HudSection(string name, int order, HudCorner corner)
         {
             Name = name;
             Order = order;
+            Corner = corner;
         }
 
         public string Name { get; }
 
-        /// <summary>Sections with a lower order are closer to the stat bars.</summary>
+        /// <summary>Sections with a lower order are closer to their corner.</summary>
         public int Order { get; }
+
+        public HudCorner Corner { get; }
 
         public bool Visible { get; set; }
 
@@ -104,9 +117,9 @@ namespace QoLChanges.UI
     }
 
     /// <summary>
-    /// Shared panel in the game HUD, stacked above the health, hunger and thirst bars in the bottom-left corner.
-    /// Features add their own sections; the panel exists while at least one section does and follows the game HUD
-    /// from world to world.
+    /// Shared panels in the game HUD: above the health, hunger and thirst bars in the bottom-left corner and in the
+    /// top-right corner. Features add their own sections; the panels exist while at least one section does and follow the
+    /// game HUD from world to world.
     /// </summary>
     internal static class HudPanel
     {
@@ -115,17 +128,17 @@ namespace QoLChanges.UI
         private static readonly List<HudSection> Sections = new List<HudSection>();
         private static HudPanelView _view;
 
-        /// <summary>Sections ordered from the stat bars upwards.</summary>
+        /// <summary>Sections ordered by <see cref="HudSection.Order"/>, nearest to their corner first.</summary>
         public static IReadOnlyList<HudSection> ActiveSections => Sections;
 
-        public static HudSection AddSection(string name, int order)
+        public static HudSection AddSection(string name, int order, HudCorner corner = HudCorner.BottomLeft)
         {
             if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException("Section name must not be empty.", nameof(name));
             }
 
-            HudSection section = new HudSection(name, order);
+            HudSection section = new HudSection(name, order, corner);
             Sections.Add(section);
             Sections.Sort((a, b) => a.Order.CompareTo(b.Order));
 
