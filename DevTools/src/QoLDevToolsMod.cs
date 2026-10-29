@@ -10,7 +10,7 @@ namespace QoLDevTools
     {
         public void Start()
         {
-            DevLog.Info("Loaded. Commands: qoldev.find, qoldev.give, qoldev.dur, qoldev.dur.all, qoldev.wear, qoldev.fuel, qoldev.net.");
+            DevLog.Info("Loaded. Commands: qoldev.find, qoldev.give, qoldev.dur, qoldev.dur.all, qoldev.wear, qoldev.fuel, qoldev.net, qoldev.scarecrow, qoldev.chest, qoldev.notify.");
         }
 
         public void OnModUnload()

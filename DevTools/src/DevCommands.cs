@@ -265,6 +265,22 @@ namespace QoLDevTools
             });
         }
 
+        [ConsoleCommand(
+            name: "qoldev.notify",
+            docs: "Shows the research notification for that many random items (default 1) one second later, through the game's queue; nothing is learned. Syntax: " + TestNotifications.Syntax)]
+        public static string Notify(string[] args)
+        {
+            return Run(() =>
+            {
+                if (!TryGetLocalPlayer(out Network_Player player, out string error))
+                {
+                    return error;
+                }
+
+                return TestNotifications.Schedule(player, args);
+            });
+        }
+
         /// <summary>The last argument is the amount when it is a number; everything before it is the name.</summary>
         private static bool TryParseGiveArgs(string[] args, out string name, out int amount, out string error)
         {
