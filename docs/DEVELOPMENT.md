@@ -63,7 +63,8 @@ Core/
                    SaveConfig() saves a change the feature made itself (pinned recipes)
   FeatureConfig    base config section ("enabled"); override Normalize() to clamp values
   FeatureSetting   declarative options the settings page is generated from:
-                   IntSliderSetting (slider), ToggleSetting (toggle), ChoiceSetting (dropdown, value = index)
+                   IntSliderSetting (slider), ToggleSetting (toggle), ChoiceSetting (dropdown, value = index);
+                   AvailableWhen greys an option out, RebuildsPage rebuilds the page after options it controls
   FeatureManager   registry, applies config, honours the master switch
   JsonConfigFile   load/merge/normalize/save with Newtonsoft.Json, atomic write
   ModLog           "[QoL Changes] " prefixed Unity log
@@ -92,7 +93,9 @@ which normalizes the section and writes the file at once.
    partial enable. Apply Harmony patches with `Patch(typeof(SomePatchClass))`; they are removed
    automatically on disable.
 3. Expose options with `GetSettings()`. Add a new `FeatureSetting` type plus a row builder in
-   `UI/RaftUiRows` and a case in `UI/QoLSettingsPage` when the existing ones are not enough.
+   `UI/RaftUiRows` and a case in `UI/QoLSettingsPage` when the existing ones are not enough. An option that only matters
+   while another one has a certain value gets `AvailableWhen` (its row is inactive otherwise, the value is kept) and the
+   option it depends on gets `RebuildsPage = true`, so the page is built again on the next frame after it changes.
 4. Add the section to `ModConfig` (field + `Normalize()`), register the feature in `QoLRuntime`.
 5. Document it in the README feature table and config example.
 
@@ -125,6 +128,7 @@ Open the console with `F10`. Commands work on the local player in a loaded world
 | `qoldev.fuel <units\|percent%>` | Host only: sets the fuel of every engine on the raft (a tank holds 50 units) and sends it to other players like the game does. |
 | `qoldev.scarecrow [parts]` | Host only: removes that many parts (default 1) of the basic scarecrow under the crosshair through `Scarecrow.DamageScarecrow`, like a pecking seagull, sent to other players like the game does. After the last part the game removes the scarecrow 3 seconds later. |
 | `qoldev.net <count\|full\|clear>` | Host only: empties the collection net under the crosshair and fills it with that many pieces of debris (`full`: up to its limit, `clear`: empty), sent to other players like the game does. Nothing goes into the inventory. |
+| `qoldev.notify [count]` | One second later (time to close the console) queues the game's research notification for that many random items (default 1, up to 10), "researched by" you, through `NotificationManager` like real research. Nothing is learned or sent; the notifications show one after another. |
 | `qoldev.chest [slots]` | Empties the open storage and puts random items into that many random slots (default: 3/4 of the slots): items of every Storage sort group, several part stacks of the same item, used tools and drinks, partly eaten food and sometimes one stack above the stack size. Synchronised when the storage is closed. |
 
 - Values are uses (`44`) or a share of max uses (`37%`); they are clamped to the item's max.
@@ -223,9 +227,13 @@ with an ingredient of several items if there is one): the button reads `Pin to H
 other recipe. The recipes follow the order of pinning, separated by dividers. Unpin the middle one. Open a storage with ingredients
 in it: the counts include it while it is open, like the crafting menu, and the storage window is drawn over the panel. Switch on
 **Count all storages**: with the storage closed its items appear as blue `+N` and the crafts as `(×N)`; take some items out and the
-numbers move from `+N` to the amount at hand; empty it and the blue parts disappear. Items in the trash can are not counted. Wait
-for a research notification (or learn a blueprint): it slides in over the top of the panel and leaves it again. Switch **Position** to Bottom left: the panel
-moves above the health bar and stays above the raft status lines while standing on the raft. Set **Background opacity** to 0, 50
+numbers move from `+N` to the amount at hand; empty it and the blue parts disappear. Items in the trash can are not counted. Run
+`qoldev.notify` and close the console: with **Notifications** at Move notifications down the wooden plate of the notification slides in 12 px
+below the panel; unpin everything and `qoldev.notify` again: it uses the corner. `qoldev.notify 3`: three in a row, all below the panel. Move
+recipes down: the panel slides 12 px below the plate, nothing of it covered, and back only after the last of `qoldev.notify 3` has left. Hide recipes: the
+panel fades out and in after the last one. Off: the notification covers the top of the panel. Switch **Position** to Bottom left:
+the panel moves above the health bar and stays above the raft status lines while standing on the raft, **Notifications** is inactive
+and `qoldev.notify` leaves the panel alone; back to Top right restores the chosen option. Set **Background opacity** to 0, 50
 and 100%: at 0 only the text remains, as plain lines; switch off **Show title**; change **HUD size**: borders, slots and dividers
 grow with it. Switch off **Show ingredients**, restart the game: the recipes and the settings stay; load another world: the same
 recipes are shown, except those not learned there. Switch on **Unpin after crafting** and craft a pinned recipe in a Normal world
@@ -287,8 +295,9 @@ _CanvasGame_New (CanvasHelper)
   InventoryParent       Inventory_Player at (-193, 384) from the centre, 386 wide; storages (Inventory_Storage_*) and the
                         research table to the right of it at (208, 345) / (209, 386), up to 389 / 435 wide
   InventoryPickup       bottom right, picked up items
-  NotificationManager   Notification_* 304x57, anchored top right at (167, -44): slide in from the right edge, about
-                        15-73 px below the top
+  NotificationManager   Notification_* 304x57, anchored top right at (167, -44); the AnimatorParent child (rect 31-88 px
+                        below the top) slides in from the right edge; its wooden plate (ResearchNotification, 330x80,
+                        with BrownBackground) is drawn about 27-120 px below the top
 ```
 
 - HUD lines use the font and shadow of the interaction prompt (`DisplayTextMiddle`) and centre their 32 px icons on the
@@ -303,6 +312,23 @@ _CanvasGame_New (CanvasHelper)
   inset on the slot background of the crafting menu (`ItemBG_wo_Frame`) and segment texts of 18 px. `BackgroundOpacity` fades
   the panel, its shadow, dividers and slots; at 0 the section is laid out like plain text. The game's sprites are found by name
   among the loaded sprites; without them icons have no slot and dividers are a plain line.
+- `HudSection.Alpha` fades a section through a `CanvasGroup`; `HudSection.CornerGap` pads the corner's panel on the side of its
+  corner (the largest gap of the corner wins) to move its sections away from the corner. `HudPanel.TryGetWorldCorners` gives where
+  a section was drawn in the last frame.
+
+### Notifications
+
+- `NotificationManager.ShowNotification(identifier)` queues one of its `notifications` ("Research", "ResearchBlueprint",
+  "NoteBookNote", "QuestItem", "Character"); `Update` shows the next one as soon as the current one is no longer `active`.
+  Research, blueprints, quest items and characters take their texts from their own info queue, so the same notification can be
+  queued several times.
+- `Notification_Animated.Show` sets the animator bool `Show` and calls `Hide` after `timeOnScreen`. The clips (controller
+  `Notification_Research`, used by all of them) move the child `AnimatorParent` in 0.42 s: show from x 25.3 (off screen) to -338.6
+  with an overshoot, hide back to 25.3, y always -15, and hide switches `AnimatorParent` off at its end. So a notification is on
+  screen while it is `active` or its `AnimatorParent` is active, and the next one starts while the previous one slides out.
+- Pinned recipes moves the notifications by the `anchoredPosition` of their root (the animator only moves the child) and puts them
+  back when the option changes or the feature is disabled (`NotificationAvoidance`). Distances are measured to the bounds of every
+  enabled `Graphic` under `AnimatorParent`, because the plate is larger than the rect of `AnimatorParent`.
 
 ### Item slots
 

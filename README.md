@@ -250,9 +250,19 @@ PINNED RECIPES
 - The pinned recipes are kept in the config and are the same in every world. A pinned recipe that is not learned in the current
   world, or comes from a mod that is not loaded, stays pinned but is not shown.
 - **Position** puts the panel in the top-right corner (default) or above the health bar and the [Raft status HUD](#raft-status-hud).
-  In the top-right corner the game's notifications (research, blueprints, notes) slide in over the top of the panel for a few
-  seconds, and the inventory, storages and other windows of the game are drawn over it; in multiplayer the names of players
-  talking in voice chat may appear over it.
+  In the top-right corner the inventory, storages and other windows of the game are drawn over the panel; in multiplayer the
+  names of players talking in voice chat may appear over it.
+- **Notifications** decides what happens while the game shows a notification in the top-right corner (research, blueprints,
+  notebook notes, quest items, new characters), from the moment it slides in until the last queued one has slid out completely:
+
+  | Option | Result |
+  |---|---|
+  | Move notifications down | The notifications slide in 12 px below the panel instead of the corner, and where the game puts them while the panel is not shown. Default. |
+  | Move recipes down | The panel moves down to 12 px below the notifications in 0.25 s and back into the corner after them. |
+  | Hide recipes | The panel fades out in 0.2 s and fades in again after them. |
+  | Off | The notifications slide in over the top of the panel. |
+
+  The option applies only in the top-right corner; with **Position** at Bottom left it is inactive and kept for later.
 - **Background opacity** (80% by default) sets the opacity of the panel, its dividers and the slots behind the icons; at 0% only
   the text is shown. **Show title** switches the `PINNED RECIPES` heading off.
 - **Show ingredients** switches the ingredient lines off, leaving the name and `×2`. **Unpin after crafting** (off by default)
@@ -346,6 +356,7 @@ Settings are stored in `<Raft>\mods\ModData\qol-changes\config.json`, created on
   "pinnedRecipes": {
     "recipes": [],
     "position": "TopRight",
+    "notifications": "MoveNotificationsDown",
     "countAllStorages": true,
     "showIngredients": true,
     "unpinAfterCrafting": false,
@@ -366,7 +377,8 @@ the game is closed or reload the mod in the RML mod manager. `multiplier` is cla
 Durability modes and the hover info `battery` format are `Off`, `Percent`, `Remaining` and `RemainingOfMax`.
 The raft status `scale` is a percentage, rounded to 75, 100, 125 or 150. The scarecrow `lineWidth` is in centimetres,
 clamped to 2–10. The storage sort `order` is `Vanilla`, `ByCategory` or `Alphabetical`. Pinned `recipes` are internal item names
-(`Axe`), at most three; `position` is `TopRight` or `BottomLeft`, `backgroundOpacity` a percentage rounded to tens and the pinned
+(`Axe`), at most three; `position` is `TopRight` or `BottomLeft`, `notifications` is `Off`, `HideRecipes`,
+`MoveRecipesDown` or `MoveNotificationsDown`, `backgroundOpacity` a percentage rounded to tens and the pinned
 recipes `scale` is rounded like the raft status one. `menu.expandedFeatures` lists
 the features whose options are shown in the menu. An invalid file is left
 untouched and defaults are used until it is fixed.
