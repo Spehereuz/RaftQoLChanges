@@ -17,6 +17,22 @@ namespace QoLChanges.Features.PinnedRecipes
         BottomLeft,
     }
 
+    /// <summary>What happens while one of the game's notifications is shown in the top-right corner.</summary>
+    public enum PinnedRecipesNotifications
+    {
+        /// <summary>Nothing: the notification slides in over the recipes.</summary>
+        Off,
+
+        /// <summary>The recipes fade out until the last notification has slid out.</summary>
+        HideRecipes,
+
+        /// <summary>The recipes move below the notifications until the last one has slid out.</summary>
+        MoveRecipesDown,
+
+        /// <summary>The notifications slide in below the recipes instead of the corner.</summary>
+        MoveNotificationsDown,
+    }
+
     [Serializable]
     public sealed class PinnedRecipesConfig : FeatureConfig
     {
@@ -31,6 +47,10 @@ namespace QoLChanges.Features.PinnedRecipes
 
         [JsonConverter(typeof(StringEnumConverter))]
         public PinnedRecipesPosition position = PinnedRecipesPosition.TopRight;
+
+        /// <summary>Used only in the top-right corner; kept while the recipes are in the bottom-left one.</summary>
+        [JsonConverter(typeof(StringEnumConverter))]
+        public PinnedRecipesNotifications notifications = PinnedRecipesNotifications.MoveNotificationsDown;
 
         /// <summary>Items in every other storage of the world are shown next to those at hand.</summary>
         public bool countAllStorages = true;
@@ -69,6 +89,11 @@ namespace QoLChanges.Features.PinnedRecipes
             if (!Enum.IsDefined(typeof(PinnedRecipesPosition), position))
             {
                 position = PinnedRecipesPosition.TopRight;
+            }
+
+            if (!Enum.IsDefined(typeof(PinnedRecipesNotifications), notifications))
+            {
+                notifications = PinnedRecipesNotifications.MoveNotificationsDown;
             }
 
             int steps = Mathf.RoundToInt((float)Mathf.Clamp(scale, MinScale, MaxScale) / ScaleStep);

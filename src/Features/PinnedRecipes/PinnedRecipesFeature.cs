@@ -15,6 +15,9 @@ namespace QoLChanges.Features.PinnedRecipes
         // Index = PinnedRecipesPosition value.
         private static readonly string[] PositionNames = { "Top right", "Bottom left" };
 
+        // Index = PinnedRecipesNotifications value.
+        private static readonly string[] NotificationNames = { "Off", "Hide recipes", "Move recipes down", "Move notifications down" };
+
         private readonly PinnedRecipesConfig _config;
 
         public PinnedRecipesFeature(PinnedRecipesConfig config)
@@ -29,7 +32,18 @@ namespace QoLChanges.Features.PinnedRecipes
                 "Position",
                 PositionNames,
                 () => (int)_config.position,
-                index => _config.position = (PinnedRecipesPosition)index);
+                index => _config.position = (PinnedRecipesPosition)index)
+            {
+                RebuildsPage = true,
+            };
+            yield return new ChoiceSetting(
+                "Notifications",
+                NotificationNames,
+                () => (int)_config.notifications,
+                index => _config.notifications = (PinnedRecipesNotifications)index)
+            {
+                AvailableWhen = () => _config.position == PinnedRecipesPosition.TopRight,
+            };
             yield return new ToggleSetting("Count all storages", () => _config.countAllStorages, value => _config.countAllStorages = value);
             yield return new ToggleSetting("Show ingredients", () => _config.showIngredients, value => _config.showIngredients = value);
             yield return new ToggleSetting("Unpin after crafting", () => _config.unpinAfterCrafting, value => _config.unpinAfterCrafting = value);

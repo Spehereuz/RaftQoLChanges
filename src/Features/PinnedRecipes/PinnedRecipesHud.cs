@@ -27,6 +27,7 @@ namespace QoLChanges.Features.PinnedRecipes
         private readonly CraftingStock _stock = new CraftingStock();
         private readonly List<IngredientAvailability> _ingredients = new List<IngredientAvailability>();
         private readonly Dictionary<string, Item_Base> _items = new Dictionary<string, Item_Base>();
+        private readonly NotificationAvoidance _notifications = new NotificationAvoidance();
         private PinnedRecipesConfig _config;
         private HudSection _section;
         private float _nextRefresh;
@@ -61,10 +62,29 @@ namespace QoLChanges.Features.PinnedRecipes
 
         private void OnDestroy()
         {
+            _notifications.Restore();
             HudPanel.RemoveSection(_section);
             _section = null;
             _stock.Clear();
             _items.Clear();
+        }
+
+        /// <summary>Every frame, after the game has updated its notifications and their animators.</summary>
+        private void LateUpdate()
+        {
+            try
+            {
+                _notifications.Update(_section, _config);
+            }
+            catch (Exception e)
+            {
+                _notifications.Restore();
+                if (!_errorLogged)
+                {
+                    _errorLogged = true;
+                    ModLog.Error(PinnedRecipesFeature.FeatureId + ": failed to keep the recipes and notifications apart.", e);
+                }
+            }
         }
 
         private void Update()
