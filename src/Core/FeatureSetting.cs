@@ -12,6 +12,17 @@ namespace QoLChanges.Core
         }
 
         public string Label { get; }
+
+        /// <summary>
+        /// While it returns false the row is shown inactive, for an option that another option makes meaningless; the value
+        /// is kept. Null: always available.
+        /// </summary>
+        public Func<bool> AvailableWhen { get; set; }
+
+        public bool IsAvailable => AvailableWhen == null || AvailableWhen();
+
+        /// <summary>Other options depend on this one: the settings page is built again after it changes.</summary>
+        public bool RebuildsPage { get; set; }
     }
 
     internal sealed class IntSliderSetting : FeatureSetting

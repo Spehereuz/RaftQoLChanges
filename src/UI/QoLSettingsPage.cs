@@ -56,14 +56,30 @@ namespace QoLChanges.UI
                 bool optionsInteractable = modEnabled && current.Config.enabled;
                 foreach (FeatureSetting setting in settings)
                 {
-                    AddSetting(templates, content, runtime, current, setting, optionsInteractable);
+                    AddSetting(templates, content, runtime, current, setting, optionsInteractable && setting.IsAvailable, refresh);
                 }
             }
         }
 
         private static void AddSetting(
-            RaftUiTemplates templates, Transform content, QoLRuntime runtime, Feature feature, FeatureSetting setting, bool interactable)
+            RaftUiTemplates templates,
+            Transform content,
+            QoLRuntime runtime,
+            Feature feature,
+            FeatureSetting setting,
+            bool interactable,
+            Action refresh)
         {
+            // The page is rebuilt on the next frame, never inside the callback of the row being changed.
+            Action apply = () =>
+            {
+                runtime.ApplyFeatureSettings(feature);
+                if (setting.RebuildsPage)
+                {
+                    refresh();
+                }
+            };
+
             IntSliderSetting slider = setting as IntSliderSetting;
             if (slider != null)
             {
@@ -80,7 +96,7 @@ namespace QoLChanges.UI
                     value =>
                     {
                         slider.Value = value;
-                        runtime.ApplyFeatureSettings(feature);
+                        apply();
                     });
                 return;
             }
@@ -97,7 +113,7 @@ namespace QoLChanges.UI
                     value =>
                     {
                         toggle.Value = value;
-                        runtime.ApplyFeatureSettings(feature);
+                        apply();
                     },
                     RowStyle.Option);
                 return;
@@ -117,7 +133,7 @@ namespace QoLChanges.UI
                     value =>
                     {
                         choice.Value = value;
-                        runtime.ApplyFeatureSettings(feature);
+                        apply();
                     });
                 return;
             }
