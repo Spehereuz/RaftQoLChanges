@@ -86,6 +86,8 @@ namespace QoLChanges.UI
 
         private float _scale = 1f;
         private float _backgroundOpacity = 1f;
+        private float _alpha = 1f;
+        private float _cornerGap;
 
         internal HudSection(string name, int order, HudCorner corner)
         {
@@ -125,6 +127,23 @@ namespace QoLChanges.UI
             set { _scale = Mathf.Clamp(value, MinScale, MaxScale); }
         }
 
+        /// <summary>Opacity of everything in the section, 0-1; it keeps its place even when invisible.</summary>
+        public float Alpha
+        {
+            get { return _alpha; }
+            set { _alpha = Mathf.Clamp01(value); }
+        }
+
+        /// <summary>
+        /// Extra distance from the corner, in HUD canvas units; the largest one of a corner moves all of its sections, so
+        /// the order of the sections is kept.
+        /// </summary>
+        public float CornerGap
+        {
+            get { return _cornerGap; }
+            set { _cornerGap = Mathf.Max(0f, value); }
+        }
+
         public List<HudLine> Lines { get; } = new List<HudLine>();
 
         /// <summary>Line <paramref name="index"/>, created with the lines before it when missing.</summary>
@@ -155,6 +174,9 @@ namespace QoLChanges.UI
     /// </summary>
     internal static class HudPanel
     {
+        /// <summary>Distance of the top-right panel from the top and right edges of the screen, in HUD canvas units.</summary>
+        public const float CornerMargin = 16f;
+
         private const string HostName = "QoLChanges_Hud";
 
         private static readonly List<HudSection> Sections = new List<HudSection>();
@@ -182,6 +204,15 @@ namespace QoLChanges.UI
             }
 
             return section;
+        }
+
+        /// <summary>
+        /// World corners of <paramref name="section"/> as drawn in the last frame (bottom-left, top-left, top-right,
+        /// bottom-right); false while it is not shown.
+        /// </summary>
+        public static bool TryGetWorldCorners(HudSection section, Vector3[] corners)
+        {
+            return section != null && _view != null && _view.TryGetWorldCorners(section, corners);
         }
 
         public static void RemoveSection(HudSection section)

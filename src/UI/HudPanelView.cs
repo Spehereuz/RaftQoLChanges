@@ -50,7 +50,7 @@ namespace QoLChanges.UI
         private static readonly Vector2 FallbackPosition = new Vector2(16f, 190f);
 
         // As far from the top edge as from the right one; the game's notifications slide in over it for a few seconds.
-        private static readonly Vector2 TopRightOffset = new Vector2(-16f, -16f);
+        private static readonly Vector2 TopRightOffset = new Vector2(-HudPanel.CornerMargin, -HudPanel.CornerMargin);
 
         private static readonly AccessTools.FieldRef<DisplayTextManager, DisplayText[]> DisplayTextsField =
             AccessTools.FieldRefAccess<DisplayTextManager, DisplayText[]>("displayTexts");
@@ -73,6 +73,18 @@ namespace QoLChanges.UI
         private Sprite _arrowSprite;
         private bool _arrowSearched;
         private bool _errorLogged;
+
+        /// <summary>World corners of a section on screen (as <see cref="RectTransform.GetWorldCorners"/>); false while it is not shown.</summary>
+        public bool TryGetWorldCorners(HudSection section, Vector3[] corners)
+        {
+            if (!_views.TryGetValue(section, out SectionView view) || view.Root == null || !view.Root.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
+            ((RectTransform)view.Root).GetWorldCorners(corners);
+            return true;
+        }
 
         public void RemoveSectionView(HudSection section)
         {
@@ -147,6 +159,7 @@ namespace QoLChanges.UI
             }
 
             HudSection nearest = null;
+            float cornerGap = 0f;
             for (int i = 0; i < _cornerSections.Count; i++)
             {
                 HudSection section = _cornerSections[i];
@@ -163,6 +176,8 @@ namespace QoLChanges.UI
                     nearest = section;
                 }
 
+                cornerGap = Mathf.Max(cornerGap, section.CornerGap);
+
                 // The layout runs top to bottom: at the bottom the nearest section is the last child, at the top the first.
                 int siblingIndex = corner == HudCorner.BottomLeft ? _cornerSections.Count - 1 - i : i;
                 if (view.Root.GetSiblingIndex() != siblingIndex)
@@ -173,10 +188,28 @@ namespace QoLChanges.UI
                 view.Apply(section, _arrowSprite);
             }
 
+            SetCornerGap(panel, corner, cornerGap);
             if (corner == HudCorner.BottomLeft)
             {
                 PlaceAboveBars(panel, nearest.Scale);
             }
+        }
+
+        /// <summary>Padding of the panel on the side of its corner pushes every section of it away from the corner.</summary>
+        private static void SetCornerGap(RectTransform panel, HudCorner corner, float gap)
+        {
+            VerticalLayoutGroup layout = panel.GetComponent<VerticalLayoutGroup>();
+            int pixels = Mathf.RoundToInt(gap);
+            RectOffset padding = layout.padding;
+            int current = corner == HudCorner.TopRight ? padding.top : padding.bottom;
+            if (current == pixels)
+            {
+                return;
+            }
+
+            layout.padding = corner == HudCorner.TopRight
+                ? new RectOffset(padding.left, padding.right, pixels, padding.bottom)
+                : new RectOffset(padding.left, padding.right, padding.top, pixels);
         }
 
         private static bool IsShown(HudSection section)
@@ -543,6 +576,7 @@ namespace QoLChanges.UI
         {
             private readonly List<RowView> _rows = new List<RowView>();
             private readonly TextStyle _style;
+            private readonly CanvasGroup _group;
             private readonly Image _shadow;
             private readonly Image _background;
             private readonly Transform _body;
@@ -559,6 +593,9 @@ namespace QoLChanges.UI
                 GameObject root = CreateChild(panel, "Section_" + name);
                 ConfigureStack(root.AddComponent<VerticalLayoutGroup>(), 0f);
                 Root = root.transform;
+                _group = root.AddComponent<CanvasGroup>();
+                _group.interactable = false;
+                _group.blocksRaycasts = false;
 
                 // Behind the body, stretched over the section and shifted down to the right; not part of the layout.
                 GameObject shadow = CreateChild(Root, "Shadow");
@@ -625,6 +662,11 @@ namespace QoLChanges.UI
                     _opacity = opacity;
                     _hasTitle = hasTitle;
                     SetStyle();
+                }
+
+                if (!Mathf.Approximately(_group.alpha, section.Alpha))
+                {
+                    _group.alpha = section.Alpha;
                 }
 
                 SetText(_title, title);
